@@ -239,6 +239,7 @@ async function joinMarket() {
     await joinMarketApi()
     uni.showToast({ title: '已加入真实婚恋市场', icon: 'none' })
     await loadSummary()
+    await discovery.loadCandidates(true)
   } catch (error) {
     actionError.value = errorMessage(error, '加入失败，请稍后重试')
   } finally {

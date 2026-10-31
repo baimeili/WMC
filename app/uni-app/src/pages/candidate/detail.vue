@@ -81,6 +81,7 @@
             </view>
             <view v-if="candidate.conflicts.length > 0" class="why-block">
               <text class="why-block__title">硬条件冲突项</text>
+              <text class="why-item__text">你与该用户的硬条件存在 {{ candidate.conflicts.length }} 项冲突</text>
               <view v-for="(conflict, index) in candidate.conflicts" :key="index" class="why-item">
                 <text class="why-item__dot">·</text>
                 <text class="why-item__text">{{ conflict }}</text>

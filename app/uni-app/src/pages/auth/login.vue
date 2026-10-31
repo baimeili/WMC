@@ -44,7 +44,7 @@
 
         <view class="consent" @tap="toggleConsent">
           <view class="consent__box" :class="{ 'consent__box--checked': agreed }">
-            <text v-if="agreed" class="consent__check">✓</text>
+            <view v-if="agreed" class="consent__dot"></view>
           </view>
           <text class="consent__text">
             我已阅读并同意
@@ -240,9 +240,11 @@ async function submit() {
   background: $uni-color-primary;
   border-color: $uni-color-primary;
 }
-.consent__check {
-  color: #ffffff;
-  font-size: 24rpx;
+.consent__dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #ffffff;
 }
 .consent__text {
   flex: 1;

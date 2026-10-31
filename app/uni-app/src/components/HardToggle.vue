@@ -1,7 +1,7 @@
 <template>
   <view class="hard-toggle" @tap="toggle">
     <view class="hard-toggle__box" :class="{ 'hard-toggle__box--checked': modelValue }">
-      <text v-if="modelValue" class="hard-toggle__check">✓</text>
+      <view v-if="modelValue" class="hard-toggle__dot"></view>
     </view>
     <view class="hard-toggle__body">
       <text class="hard-toggle__label">{{ label }}</text>
@@ -56,9 +56,11 @@ function toggle() {
   background: $uni-color-primary;
   border-color: $uni-color-primary;
 }
-.hard-toggle__check {
-  color: #ffffff;
-  font-size: 22rpx;
+.hard-toggle__dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #ffffff;
 }
 .hard-toggle__body {
   flex: 1;
