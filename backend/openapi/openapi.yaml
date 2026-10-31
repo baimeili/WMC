@@ -602,6 +602,17 @@ paths:
                   - type: object
                     properties:
                       data: { $ref: '#/components/schemas/MatchDetail' }
+    delete:
+      tags: [interaction]
+      summary: 取消 Match（双方均可操作，取消后不再出现在列表）
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
   /matches/{id}/outcomes:
     post:
       tags: [interaction]
@@ -1600,37 +1611,3 @@ components:
       properties:
         items:
           type: array
-          items:
-            type: object
-            properties:
-              id: { type: string, format: uuid }
-              nickname: { type: string }
-              phone_masked: { type: string }
-              status: { type: integer }
-              role: { type: integer }
-              discovery_enabled: { type: boolean }
-              profile_completion: { type: integer }
-              is_seed: { type: boolean }
-              created_at: { type: string, format: date-time }
-        total: { type: integer }
-        page: { type: integer }
-        page_size: { type: integer }
-    SettingsBundle:
-      type: object
-      properties:
-        features:
-          type: object
-          additionalProperties: { type: boolean }
-        settings:
-          type: object
-          additionalProperties: true
-    AuditLog:
-      type: object
-      properties:
-        id: { type: integer }
-        actor_user_id: { type: string, nullable: true }
-        action: { type: string }
-        target_type: { type: string }
-        target_id: { type: string }
-        detail: {}
-        created_at: { type: string, format: date-time }

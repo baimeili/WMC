@@ -34,6 +34,7 @@ func (h *Handler) Register(r chi.Router) {
 	r.Put("/interactions/{user_id}", h.act)
 	r.Get("/matches", h.listMatches)
 	r.Get("/matches/{id}", h.getMatch)
+	r.Delete("/matches/{id}", h.cancelMatch)
 	r.Post("/matches/{id}/outcomes", h.addOutcome)
 	r.Post("/users/{id}/block", h.block)
 	r.Delete("/users/{id}/block", h.unblock)
@@ -114,6 +115,23 @@ func (h *Handler) getMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.OK(w, r, detail)
+}
+
+func (h *Handler) cancelMatch(w http.ResponseWriter, r *http.Request) {
+	uid, ok := h.actor(w, r)
+	if !ok {
+		return
+	}
+	matchID, err := pathID(r, "id")
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	if err := h.svc.CancelMatch(r.Context(), uid, matchID); err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, r, map[string]string{"status": "cancelled"})
 }
 
 func (h *Handler) addOutcome(w http.ResponseWriter, r *http.Request) {
