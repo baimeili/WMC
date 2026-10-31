@@ -20,6 +20,7 @@ import (
 	"wmc/backend/internal/baseline"
 	"wmc/backend/internal/calculator"
 	"wmc/backend/internal/discovery"
+	"wmc/backend/internal/interaction"
 	"wmc/backend/internal/meta"
 	"wmc/backend/internal/photo"
 	"wmc/backend/internal/platform/config"
@@ -50,8 +51,9 @@ type services struct {
 	baseline *baseline.Handler
 	user      *user.Handler
 	photo     *photo.Handler
-	admin     *admin.Handler
-	discovery *discovery.Handler
+	admin       *admin.Handler
+	discovery   *discovery.Handler
+	interaction *interaction.Handler
 }
 
 func run() error {
@@ -109,7 +111,8 @@ func run() error {
 	baselineSvc := baseline.NewService(st, pool, settingsSvc, string(cfg.Env))
 	userSvc := user.NewService(st, settingsSvc)
 	photoSvc := photo.NewService(st, obj)
-	adminSvc := admin.NewService(st, settingsSvc, cfg.PhoneEncryptionKey)
+	adminSvc := admin.NewService(st, settingsSvc, obj, cfg.PhoneEncryptionKey)
+	interactionSvc := interaction.NewService(st, settingsSvc, obj)
 	limiter := ratelimit.New(kv)
 
 	svc := &services{
@@ -120,7 +123,8 @@ func run() error {
 		user:     user.NewHandler(userSvc),
 		photo:    photo.NewHandler(photoSvc),
 		admin:    admin.NewHandler(adminSvc),
-		discovery: discovery.NewHandler(discoverySvc),
+		discovery:   discovery.NewHandler(discoverySvc),
+		interaction: interaction.NewHandler(interactionSvc, st),
 	}
 
 	m := metrics.New()
@@ -221,6 +225,7 @@ func buildRouter(
 			svc.auth.Register(pub)
 			svc.calc.Register(pub)
 			svc.meta.RegisterPublic(pub)
+			svc.interaction.RegisterPublic(pub)
 
 			// 需要登录的用户接口
 			pub.Group(func(me chi.Router) {
@@ -228,6 +233,7 @@ func buildRouter(
 				svc.user.Register(me)
 				svc.photo.Register(me)
 				svc.discovery.Register(me)
+				svc.interaction.Register(me)
 			})
 		})
 

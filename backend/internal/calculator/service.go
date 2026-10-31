@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"wmc/backend/internal/db/sqlcdb"
+	"wmc/backend/internal/events"
 	"wmc/backend/internal/platform/apperr"
 	"wmc/backend/internal/platform/convert"
 	"wmc/backend/internal/platform/redisx"
@@ -126,6 +127,13 @@ func (s *Service) Estimate(ctx context.Context, req EstimateRequest, userID *uui
 	if !s.settings.Bool(ctx, settings.KeyCalculatorEnabled, true) {
 		return nil, apperr.ErrFeatureDisabled.WithMessage("计算器功能暂未开放")
 	}
+	// 记录产品事件，保证运营漏斗「访问计算器 → 完成计算器」有数据
+	var anonEventID *string
+	if userID == nil && req.AnonymousSessionID != "" {
+		anonEventID = &req.AnonymousSessionID
+	}
+	events.Record(ctx, s.store, userID, anonEventID, events.NameCalculatorStarted, nil)
+
 	filter := req.Conditions.ToFilter()
 	if err := filter.Validate(); err != nil {
 		return nil, apperr.Invalid(err.Error())
@@ -186,6 +194,9 @@ func (s *Service) Estimate(ctx context.Context, req EstimateRequest, userID *uui
 		return nil, apperr.ErrInternal.Wrap(err)
 	}
 	response.RunID = run.ID
+	events.Record(ctx, s.store, userID, anonEventID, events.NameCalculatorCompleted, map[string]any{
+		"run_id": run.ID.String(), "matched_ratio": payload.Estimate.MatchedRatio,
+	})
 	return response, nil
 }
 

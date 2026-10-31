@@ -14,7 +14,7 @@ INSERT INTO system_settings (key, value, description) VALUES
 ('registration_enabled', 'true', '注册开关'),
 ('discovery_enabled', 'true', '真实婚恋池总开关'),
 ('likes_enabled', 'true', 'Like/Pass 开关'),
-('matches_enabled', 'false', 'Match 功能开关（Phase 4 打开）'),
+('matches_enabled', 'true', 'Match 功能开关'),
 ('chat_enabled', 'false', '聊天开关（Phase 5 以后）'),
 ('payments_enabled', 'false', '支付开关（暂不实现）'),
 ('verification_enabled', 'false', '认证开关（第一版只做手机号）'),

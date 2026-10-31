@@ -16,6 +16,7 @@ import (
 	"wmc/backend/internal/platform/enums"
 	"wmc/backend/internal/platform/secure"
 	"wmc/backend/internal/settings"
+	"wmc/backend/internal/storage"
 	"wmc/backend/internal/store"
 )
 
@@ -23,12 +24,13 @@ import (
 type Service struct {
 	store    *store.Store
 	settings *settings.Service
+	obj      storage.ObjectStorage
 	phoneKey []byte
 }
 
 // NewService 构造后台服务。
-func NewService(st *store.Store, set *settings.Service, phoneKey []byte) *Service {
-	return &Service{store: st, settings: set, phoneKey: phoneKey}
+func NewService(st *store.Store, set *settings.Service, obj storage.ObjectStorage, phoneKey []byte) *Service {
+	return &Service{store: st, settings: set, obj: obj, phoneKey: phoneKey}
 }
 
 // UserItem 用户列表项。
