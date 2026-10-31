@@ -45,14 +45,14 @@ async function loadUser(): Promise<void> {
   loadError.value = ''
   detailFallback.value = false
   try {
-    user.value = await getUserDetail(id.value)
+    user.value = normalizeDetail(await getUserDetail(id.value))
   } catch (error) {
     if (isNotFound(error)) {
       // 契约未提供单用户详情端点时的兜底：按 id 检索用户列表。
       try {
         const fallback = await findUserInList(id.value)
         if (fallback) {
-          user.value = fallback
+          user.value = normalizeDetail(fallback)
           detailFallback.value = true
         } else {
           user.value = null
@@ -79,6 +79,34 @@ async function loadReports(): Promise<void> {
     reports.value = await listReportsByUser(id.value)
   } catch {
     reports.value = []
+  }
+}
+
+// 后端当前返回扁平资料字段，统一归一化为 profile 供模板展示。
+function normalizeDetail(detail: AdminUserDetail): AdminUserDetail {
+  if (detail.profile) {
+    return detail
+  }
+  const hasFlatProfile =
+    detail.age !== undefined ||
+    detail.gender !== undefined ||
+    detail.city_code !== undefined ||
+    detail.education_level !== undefined ||
+    detail.marital_status !== undefined
+  if (!hasFlatProfile) {
+    return detail
+  }
+  return {
+    ...detail,
+    profile: {
+      nickname: detail.nickname,
+      gender: detail.gender,
+      age: detail.age,
+      city_code: detail.city_code,
+      education_level: detail.education_level,
+      marital_status: detail.marital_status,
+      profile_completion: detail.profile_completion
+    }
   }
 }
 
@@ -190,10 +218,10 @@ function goBack(): void {
           <el-descriptions-item label="昵称">{{ user.nickname || user.profile?.nickname || '未设置' }}</el-descriptions-item>
           <el-descriptions-item label="手机号">{{ user.phone_masked || '不可见（隐私保护）' }}</el-descriptions-item>
           <el-descriptions-item label="用户 ID">{{ user.id || '—' }}</el-descriptions-item>
-          <el-descriptions-item label="角色">{{ labelOf(ROLE_LABELS, user.role) }}</el-descriptions-item>
+          <el-descriptions-item label="角色">{{ user.role_label || labelOf(ROLE_LABELS, user.role) }}</el-descriptions-item>
           <el-descriptions-item label="账号状态">
             <el-tag :type="userStatusTagType(user.status)" size="small">
-              {{ labelOf(USER_STATUS_LABELS, user.status) }}
+              {{ user.status_label || labelOf(USER_STATUS_LABELS, user.status) }}
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="入池状态">

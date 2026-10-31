@@ -154,7 +154,9 @@ func (s *Service) ImportCSV(ctx context.Context, datasetID uuid.UUID, r io.Reade
 	}
 	index := make(map[string]int, len(header))
 	for i, h := range header {
-		index[strings.TrimSpace(strings.ToLower(h))] = i
+		// 兼容 Excel/PowerShell 导出的 UTF-8 BOM
+		key := strings.TrimPrefix(strings.TrimSpace(strings.ToLower(h)), "\ufeff")
+		index[key] = i
 	}
 	for _, required := range CSVHeaders {
 		if _, ok := index[required]; !ok {

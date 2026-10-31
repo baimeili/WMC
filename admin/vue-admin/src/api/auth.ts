@@ -17,9 +17,9 @@ export function devLogin(phone: string): Promise<TokenPair> {
   return post<TokenPair>('/admin/auth/dev-login', { phone }, { silent: true })
 }
 
-// 退出登录并吊销 Refresh Token。
+// 退出登录并吊销 Refresh Token（静默：本地退出优先，不因服务端失败打扰用户）。
 export function logout(): Promise<void> {
-  return post<void>('/auth/logout')
+  return post<void>('/auth/logout', undefined, { silent: true })
 }
 
 // 刷新 Access Token（Refresh Token 轮换）。

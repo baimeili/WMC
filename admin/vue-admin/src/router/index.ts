@@ -99,10 +99,8 @@ router.beforeEach((to) => {
   const auth = useAuthStore()
   const isPublic = Boolean(to.meta.public)
   if (isPublic) {
-    if (auth.isLoggedIn && auth.canAccessAdmin && to.path !== '/login') {
-      return '/dashboard'
-    }
-    if (auth.isLoggedIn && auth.canAccessAdmin && to.path === '/login') {
+    // 已登录且有权限时，访问登录页直接回到看板。
+    if (auth.isLoggedIn && auth.canAccessAdmin) {
       return '/dashboard'
     }
     return true

@@ -1,0 +1,150 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "婚恋市场计算器"
+      }
+    },
+    {
+      "path": "pages/calculator/index",
+      "style": {
+        "navigationBarTitleText": "算算我的候选池"
+      }
+    },
+    {
+      "path": "pages/calculator/result",
+      "style": {
+        "navigationBarTitleText": "理论市场估算结果"
+      }
+    },
+    {
+      "path": "pages/calculator/share",
+      "style": {
+        "navigationBarTitleText": "分享的估算结果"
+      }
+    },
+    {
+      "path": "pages/auth/login",
+      "style": {
+        "navigationBarTitleText": "登录 / 注册"
+      }
+    },
+    {
+      "path": "pages/onboarding/basic",
+      "style": {
+        "navigationBarTitleText": "基础资料"
+      }
+    },
+    {
+      "path": "pages/onboarding/career",
+      "style": {
+        "navigationBarTitleText": "教育与职业"
+      }
+    },
+    {
+      "path": "pages/onboarding/marriage",
+      "style": {
+        "navigationBarTitleText": "婚姻与家庭"
+      }
+    },
+    {
+      "path": "pages/onboarding/lifestyle",
+      "style": {
+        "navigationBarTitleText": "生活习惯"
+      }
+    },
+    {
+      "path": "pages/onboarding/preferences",
+      "style": {
+        "navigationBarTitleText": "择偶条件"
+      }
+    },
+    {
+      "path": "pages/onboarding/compatibility",
+      "style": {
+        "navigationBarTitleText": "婚恋价值观"
+      }
+    },
+    {
+      "path": "pages/discovery/index",
+      "style": {
+        "navigationBarTitleText": "本站真实候选池"
+      }
+    },
+    {
+      "path": "pages/discovery/funnel",
+      "style": {
+        "navigationBarTitleText": "真实候选池漏斗"
+      }
+    },
+    {
+      "path": "pages/discovery/sensitivity",
+      "style": {
+        "navigationBarTitleText": "真实候选池条件敏感性"
+      }
+    },
+    {
+      "path": "pages/candidate/detail",
+      "style": {
+        "navigationBarTitleText": "候选人详情"
+      }
+    },
+    {
+      "path": "pages/matches/index",
+      "style": {
+        "navigationBarTitleText": "我的 Match"
+      }
+    },
+    {
+      "path": "pages/matches/detail",
+      "style": {
+        "navigationBarTitleText": "Match 详情"
+      }
+    },
+    {
+      "path": "pages/profile/index",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/profile/edit",
+      "style": {
+        "navigationBarTitleText": "编辑资料"
+      }
+    },
+    {
+      "path": "pages/settings/index",
+      "style": {
+        "navigationBarTitleText": "设置"
+      }
+    },
+    {
+      "path": "pages/settings/privacy",
+      "style": {
+        "navigationBarTitleText": "隐私与协议"
+      }
+    },
+    {
+      "path": "pages/settings/account",
+      "style": {
+        "navigationBarTitleText": "账号与安全"
+      }
+    },
+    {
+      "path": "pages/report/index",
+      "style": {
+        "navigationBarTitleText": "举报用户"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "婚恋市场计算器",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f6f8",
+    "backgroundColorTop": "#f5f6f8",
+    "backgroundColorBottom": "#f5f6f8"
+  }
+}

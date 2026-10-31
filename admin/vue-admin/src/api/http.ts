@@ -82,6 +82,13 @@ async function redirectToLogin(): Promise<void> {
   }
   redirectingToLogin = true
   try {
+    // 同步清理 Pinia 内存态：只清 localStorage 会让路由守卫仍认为已登录，造成跳转循环。
+    const storeModule = await import('@/stores/auth')
+    storeModule.useAuthStore().clear()
+  } catch {
+    // store 尚未初始化时忽略，localStorage 已清理。
+  }
+  try {
     if (!window.location.pathname.endsWith('/login')) {
       const routerModule = await import('@/router')
       await routerModule.default.replace('/login')

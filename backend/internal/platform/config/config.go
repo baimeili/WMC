@@ -152,7 +152,8 @@ func (c *Config) validate() error {
 			c.PhoneHashSecret = "dev-only-phone-hash-secret"
 		}
 		if len(c.PhoneEncryptionKey) != 32 {
-			c.PhoneEncryptionKey = []byte("dev-only-phone-encryption-key-32b")
+			// 仅用于本地开发：32 字节固定密钥，生产必须通过 PHONE_ENC_KEY 覆盖
+			c.PhoneEncryptionKey = []byte("0123456789abcdef0123456789abcdef")
 		}
 	}
 

@@ -12,12 +12,13 @@ import (
 // Handler 认证处理器。
 type Handler struct {
 	svc        *Service
+	sms        *SMSService
 	devLoginOK bool
 }
 
 // NewHandler 构造处理器。
-func NewHandler(svc *Service, devLoginEnabled bool) *Handler {
-	return &Handler{svc: svc, devLoginOK: devLoginEnabled}
+func NewHandler(svc *Service, smsSvc *SMSService, devLoginEnabled bool) *Handler {
+	return &Handler{svc: svc, sms: smsSvc, devLoginOK: devLoginEnabled}
 }
 
 // Register 注册路由。
@@ -25,6 +26,45 @@ func (h *Handler) Register(r chi.Router) {
 	r.Post("/admin/auth/dev-login", h.devLogin)
 	r.Post("/auth/refresh", h.refresh)
 	r.Post("/auth/logout", h.logout)
+	r.Post("/auth/sms/send", h.sendCode)
+	r.Post("/auth/sms/verify", h.verifyCode)
+}
+
+type sendCodeRequest struct {
+	Phone string `json:"phone"`
+}
+
+func (h *Handler) sendCode(w http.ResponseWriter, r *http.Request) {
+	var req sendCodeRequest
+	if err := httpx.DecodeJSON(w, r, &req); err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	if err := h.sms.SendCode(r.Context(), req.Phone, httpx.ClientIP(r)); err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, r, map[string]string{"status": "sent"})
+}
+
+type verifyCodeRequest struct {
+	Phone              string `json:"phone"`
+	Code               string `json:"code"`
+	AnonymousSessionID string `json:"anonymous_session_id"`
+}
+
+func (h *Handler) verifyCode(w http.ResponseWriter, r *http.Request) {
+	var req verifyCodeRequest
+	if err := httpx.DecodeJSON(w, r, &req); err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	pair, err := h.sms.Verify(r.Context(), req.Phone, req.Code, r.UserAgent(), httpx.ClientIP(r))
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, r, pair)
 }
 
 type devLoginRequest struct {

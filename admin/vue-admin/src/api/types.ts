@@ -94,8 +94,17 @@ export interface AdminUserProfileSummary {
 }
 
 // 用户详情：在列表项基础上补充资料摘要、最近登录与举报记录。
+// 后端当前返回扁平字段（age/gender/city_code/education_level/marital_status），
+// 页面会将其归一化为 profile 后展示，兼容未来嵌套 profile 的契约形态。
 export interface AdminUserDetail extends AdminUserItem {
   last_login_at?: string
+  gender?: number
+  city_code?: string
+  age?: number
+  education_level?: number
+  marital_status?: number
+  role_label?: string
+  status_label?: string
   profile?: AdminUserProfileSummary
   reports?: Report[]
 }

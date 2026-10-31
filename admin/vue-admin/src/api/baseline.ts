@@ -31,8 +31,12 @@ export function rollbackDataset(datasetId: string): Promise<void> {
   return post<void>(`/admin/baseline/datasets/${datasetId}/rollback`)
 }
 
-// 从列表接口获取单个数据集（契约未提供单条查询端点）。
+// 获取单个数据集：优先后端单条查询端点，失败时回退到列表检索。
 export async function getDataset(datasetId: string): Promise<BaselineDataset | undefined> {
-  const datasets = await listDatasets()
-  return datasets.find((dataset) => dataset.id === datasetId)
+  try {
+    return await get<BaselineDataset>(`/admin/baseline/datasets/${datasetId}`, undefined, { silent: true })
+  } catch {
+    const datasets = await listDatasets()
+    return datasets.find((dataset) => dataset.id === datasetId)
+  }
 }

@@ -2,12 +2,14 @@
 -- 用户、认证、验证、同意记录
 
 -- 通用更新时间触发器函数
+-- +goose StatementBegin
 CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
 BEGIN
     NEW.updated_at = now();
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+-- +goose StatementEnd
 
 CREATE TABLE users (
     id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
