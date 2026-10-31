@@ -19,6 +19,7 @@ import (
 	"wmc/backend/internal/auth"
 	"wmc/backend/internal/baseline"
 	"wmc/backend/internal/calculator"
+	"wmc/backend/internal/discovery"
 	"wmc/backend/internal/meta"
 	"wmc/backend/internal/photo"
 	"wmc/backend/internal/platform/config"
@@ -47,9 +48,10 @@ type services struct {
 	calc     *calculator.Handler
 	meta     *meta.Handler
 	baseline *baseline.Handler
-	user     *user.Handler
-	photo    *photo.Handler
-	admin    *admin.Handler
+	user      *user.Handler
+	photo     *photo.Handler
+	admin     *admin.Handler
+	discovery *discovery.Handler
 }
 
 func run() error {
@@ -102,6 +104,7 @@ func run() error {
 	smsSvc := auth.NewSMSService(authSvc, st, smsProvider, kv, settingsSvc)
 
 	calcSvc := calculator.NewService(st, pool, settingsSvc, kv)
+	discoverySvc := discovery.NewService(st, pool, settingsSvc, obj)
 	metaSvc := meta.NewService(st, settingsSvc)
 	baselineSvc := baseline.NewService(st, pool, settingsSvc, string(cfg.Env))
 	userSvc := user.NewService(st, settingsSvc)
@@ -117,6 +120,7 @@ func run() error {
 		user:     user.NewHandler(userSvc),
 		photo:    photo.NewHandler(photoSvc),
 		admin:    admin.NewHandler(adminSvc),
+		discovery: discovery.NewHandler(discoverySvc),
 	}
 
 	m := metrics.New()
@@ -223,6 +227,7 @@ func buildRouter(
 				me.Use(auth.Middleware(tokens, authSvc))
 				svc.user.Register(me)
 				svc.photo.Register(me)
+				svc.discovery.Register(me)
 			})
 		})
 

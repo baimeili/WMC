@@ -15,6 +15,7 @@ import (
 	"wmc/backend/internal/platform/dbx"
 	"wmc/backend/internal/platform/logx"
 	"wmc/backend/internal/platform/redisx"
+	"wmc/backend/internal/seed"
 	"wmc/backend/internal/settings"
 	"wmc/backend/internal/store"
 )
@@ -25,16 +26,17 @@ func main() {
 		demoCount  = flag.Int("demo-records", 3000, "DEMO 数据集记录数")
 		admin      = flag.Bool("admin", true, "创建开发管理员账号")
 		adminPhone = flag.String("admin-phone", "13800000000", "开发管理员手机号")
+		userCount  = flag.Int("users", 0, "生成 TEST DATA 测试用户数量（0 表示不生成）")
 	)
 	flag.Parse()
 
-	if err := run(*demo, *demoCount, *admin, *adminPhone); err != nil {
+	if err := run(*demo, *demoCount, *admin, *adminPhone, *userCount); err != nil {
 		fmt.Fprintln(os.Stderr, "生成数据失败:", err)
 		os.Exit(1)
 	}
 }
 
-func run(demo bool, demoCount int, createAdmin bool, adminPhone string) error {
+func run(demo bool, demoCount int, createAdmin bool, adminPhone string, userCount int) error {
 	cfg, err := config.Load()
 	if err != nil {
 		return err
@@ -78,6 +80,14 @@ func run(demo bool, demoCount int, createAdmin bool, adminPhone string) error {
 			fmt.Printf("开发管理员：手机号 %s（super_admin），开发验证码 123456\n", adminPhone)
 		}
 		_ = user
+	}
+
+	if userCount > 0 {
+		createdUsers, err := seed.Users(ctx, st, cfg.PhoneHashSecret, cfg.PhoneEncryptionKey, userCount, 20260101)
+		if err != nil {
+			return fmt.Errorf("生成测试用户失败: %w", err)
+		}
+		fmt.Printf("已生成 %d 个 TEST DATA 测试用户（手机号 137xxxxxxxx，验证码 123456）\n", createdUsers)
 	}
 
 	if demo {
