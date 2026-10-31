@@ -1,0 +1,2536 @@
+婚恋市场计算器 MVP 产品与技术需求规格 v0.1
+
+0. 开发任务
+
+请实现一个可实际部署运行的“婚恋市场计算器 + 双向婚恋匹配”MVP。
+
+目标不是传统刷脸 Dating App，而是：
+
+让用户知道自己的择偶条件在市场上到底筛掉了多少人，以及真实平台中有多少人和自己双向满足基础条件。
+
+第一阶段核心闭环：
+
+游客进入
+→ 填写自身基本信息
+→ 填写择偶条件
+→ 查看理论婚恋市场估算
+→ 注册
+→ 完善真实档案
+→ 加入真实婚恋市场
+→ 查看真实候选池
+→ 双向硬条件筛选
+→ 查看候选人
+→ Like / Pass
+→ 双向 Like 形成 Match
+→ 双方可主动反馈“已联系/已见面/建立关系”
+
+MVP 暂不实现：
+
+- 即时聊天 IM
+- 直播
+- 动态/朋友圈
+- 短视频
+- LLM 推荐
+- AI 恋爱顾问
+- 支付/会员
+- 精确 GPS 附近的人
+- 视频通话
+- 复杂身份证/学历/收入认证
+
+但架构不得妨碍后续增加这些模块。
+
+---
+
+1. 技术栈
+
+1.1 后端
+
+使用：
+
+Go 1.27.x
+REST API
+OpenAPI 3.1
+PostgreSQL 18
+Redis
+S3-compatible Object Storage
+Docker / Docker Compose
+
+推荐库：
+
+Router:
+github.com/go-chi/chi
+
+PostgreSQL:
+github.com/jackc/pgx/v5
+
+SQL:
+sqlc
+
+Migration:
+goose
+
+Redis:
+github.com/redis/go-redis
+
+JWT:
+github.com/golang-jwt/jwt/v5
+
+Validation:
+github.com/go-playground/validator
+
+Logging:
+Go 标准库 log/slog
+
+原则：
+
+禁止为了开发方便引入重型 ORM。
+
+数据库 Schema 由 migration 控制，SQL 查询通过 sqlc 生成类型安全代码。
+
+API 以：
+
+openapi/openapi.yaml
+
+作为前后端契约。
+
+---
+
+2. 前端
+
+使用：
+
+uni-app
+Vue 3
+TypeScript
+Vite
+Pinia
+SCSS
+uni-ui
+
+第一阶段目标：
+
+H5
+Android
+iOS
+
+微信小程序等以后扩展。
+
+所有 API 类型尽量由 OpenAPI 自动生成 TypeScript 类型。
+
+不要直接在各页面散落：
+
+uni.request(...)
+
+统一封装：
+
+src/api/http.ts
+src/api/auth.ts
+src/api/profile.ts
+src/api/calculator.ts
+src/api/discovery.ts
+...
+
+---
+
+3. 后台管理端
+
+独立：
+
+Vue3
+TypeScript
+Vite
+Element Plus
+
+仅 Web。
+
+路径：
+
+/admin
+
+后台功能包括：
+
+- 用户查询
+- 用户冻结
+- 举报处理
+- 图片审核
+- 基准人口数据集管理
+- 婚恋问题配置
+- 系统参数
+- Feature Flag
+- 产品漏斗统计
+
+---
+
+4. 基础架构
+
+建议 Monorepo：
+
+dating-market/
+├── backend/
+│   ├── cmd/
+│   │   ├── api/
+│   │   └── worker/
+│   ├── internal/
+│   │   ├── auth/
+│   │   ├── user/
+│   │   ├── profile/
+│   │   ├── preference/
+│   │   ├── calculator/
+│   │   ├── matching/
+│   │   ├── discovery/
+│   │   ├── interaction/
+│   │   ├── moderation/
+│   │   ├── analytics/
+│   │   └── admin/
+│   ├── db/
+│   │   ├── migrations/
+│   │   ├── queries/
+│   │   └── sqlc.yaml
+│   ├── openapi/
+│   │   └── openapi.yaml
+│   └── Dockerfile
+│
+├── app/
+│   └── uni-app
+│
+├── admin/
+│   └── vue-admin
+│
+├── deploy/
+│   ├── docker-compose.yml
+│   └── Caddyfile
+│
+└── README.md
+
+---
+
+5. 用户类型
+
+系统角色：
+
+guest
+user
+moderator
+admin
+super_admin
+
+用户状态：
+
+pending
+active
+suspended
+deleted
+
+真实婚恋市场参与状态单独控制：
+
+discovery_enabled = true / false
+
+用户注册并不意味着自动进入婚恋池。
+
+只有：
+
+- 年满18岁
+- 完成必要资料
+- 主动同意加入婚恋市场
+- 账户正常
+
+才允许：
+
+discovery_enabled = true
+
+---
+
+6. 产品的两个市场必须严格区分
+
+6.1 理论婚恋市场
+
+数据来自：
+
+后台导入的公开统计/调查数据集。
+
+用途：
+
+“按照你设置的条件，
+理论上会剩下多少目标人群？”
+
+这是统计估算。
+
+不得显示成：
+
+«全国有精确 827,431 个这样的人。»
+
+应该显示：
+
+«根据 XX 数据集估算，约占目标人群 3.8%。»
+
+---
+
+6.2 本站真实婚恋市场
+
+数据只来自：
+
+当前平台注册用户
++
+主动加入匹配池
++
+账户正常
+
+这里可以真正计算：
+
+A 的条件 → B 是否满足
+B 的条件 → A 是否满足
+
+从而得到：
+
+双向基础匹配。
+
+页面必须明确区分：
+
+理论市场估算
+
+本站真实用户池
+
+禁止混用。
+
+---
+
+7. 冷启动的重要设计
+
+在平台只有几十个人时：
+
+不能让用户进入一个空荡荡的 Dating App。
+
+因此首页第一核心功能必须始终是：
+
+婚恋市场计算器
+
+即使只有20个注册用户，计算器仍然有使用价值。
+
+真实候选人数不足时显示：
+
+本站目前仍处于早期测试阶段。
+
+你当前已有：
+<10 名双向基础候选人
+
+随着目标城市用户增加，
+候选池会自动更新。
+
+不得显示：
+
+0个人
+
+造成强烈鬼城感。
+
+---
+
+8. 注册
+
+第一版使用：
+
+手机号
++
+短信验证码
+
+接口：
+
+POST /api/v1/auth/sms/send
+POST /api/v1/auth/sms/verify
+POST /api/v1/auth/refresh
+POST /api/v1/auth/logout
+
+开发环境：
+
+SMS_PROVIDER=mock
+
+可以固定验证码。
+
+生产环境禁止 mock。
+
+短信 Provider 必须抽象：
+
+type SMSProvider interface {
+    SendVerificationCode(...)
+}
+
+未来可以接：
+
+腾讯云
+阿里云
+其他供应商
+
+---
+
+9. Token
+
+Access Token：
+
+15分钟
+
+Refresh Token：
+
+30天
+
+Refresh Token 在数据库只保存 Hash。
+
+支持主动失效。
+
+---
+
+10. 用户基础资料
+
+表：
+
+users
+
+字段：
+
+字段| 类型| 说明
+id| UUID| PK
+phone_hash| varchar| 手机号检索
+phone_encrypted| bytea| 加密手机号
+status| smallint| 状态
+role| smallint| 角色
+discovery_enabled| bool| 是否进入婚恋市场
+last_login_at| timestamptz| 最近登录
+created_at| timestamptz| 创建
+updated_at| timestamptz| 更新
+deleted_at| timestamptz| 注销
+
+手机号不得明文存储。
+
+---
+
+11. Profile
+
+表：
+
+user_profiles
+
+一名用户一条 Profile。
+
+字段：
+
+字段| 说明
+user_id| FK users
+nickname| 昵称
+gender| 性别
+birth_date| 出生日期
+province_code| 省
+city_code| 城市
+district_code| 区，可空
+height_cm| 身高
+education_level| 学历
+occupation_category| 职业分类
+employment_status| 就业状态
+annual_income_band| 年收入区间
+family_asset_band| 家庭资产区间，可空
+debt_band| 个人负债区间
+house_status| 房产状态
+vehicle_status| 车辆状态
+marital_status| 婚姻状态
+children_count| 子女数量
+wants_children| 生育意愿
+marriage_intent| 结婚意愿
+marriage_timeline| 希望多久结婚
+smoking_status| 吸烟
+drinking_status| 饮酒
+bio| 简介
+profile_completion| 完整度
+created_at| 
+updated_at| 
+
+收入禁止输入精确工资。
+
+使用区间：
+
+<5万
+5-10万
+10-20万
+20-30万
+30-50万
+50-100万
+100万+
+不愿透露
+
+类似资产/负债均使用区间。
+
+---
+
+12. Partner Preferences
+
+表：
+
+partner_preferences
+
+一名用户一条。
+
+字段至少包括：
+
+user_id
+
+target_genders[]
+
+min_age
+max_age
+age_hard
+
+min_height_cm
+max_height_cm
+height_hard
+
+allowed_city_codes[]
+city_hard
+
+min_education_level
+education_hard
+
+min_income_band
+income_hard
+
+allowed_marital_statuses[]
+marital_status_hard
+
+allowed_children_states[]
+children_hard
+
+allowed_wants_children[]
+wants_children_hard
+
+allowed_smoking_statuses[]
+smoking_hard
+
+allowed_drinking_statuses[]
+drinking_hard
+
+min_marriage_intent
+marriage_intent_hard
+
+weights JSONB
+
+created_at
+updated_at
+
+其中：
+
+*_hard = true
+
+代表：
+
+这是底线条件。
+
+不满足直接淘汰。
+
+如果：
+
+*_hard = false
+
+则参与软匹配评分。
+
+---
+
+13. 不使用“传统女性/女权/大男子主义”等标签
+
+产品不得直接询问：
+
+你是不是女权？
+你是不是传统女性？
+你是不是传统男性？
+
+这类标签：
+
+- 定义不清
+- 容易导致争吵
+- 数据质量低
+- 无法直接用于生活决策
+
+应该拆成实际生活问题。
+
+---
+
+14. 婚恋价值观问题系统
+
+表：
+
+compatibility_questions
+
+字段：
+
+id
+code
+category
+title
+description
+question_type
+options JSONB
+active
+sort_order
+version
+created_at
+updated_at
+
+问题不能写死在客户端。
+
+后台可以添加/修改/停用。
+
+---
+
+15. 第一版建议问题
+
+至少包含：
+
+财务
+
+婚后家庭开支如何承担？
+
+选项例如：
+
+主要由男方
+主要由女方
+按收入比例
+大致AA
+全部进入共同账户
+其他
+
+---
+
+房屋
+
+购房首付如何承担？
+
+---
+
+家务
+
+家务如何分配？
+
+---
+
+育儿
+
+孩子出生后谁承担主要育儿时间？
+
+---
+
+职业
+
+如果双方事业发生冲突，应如何处理？
+
+---
+
+异地
+
+双方工作城市不同，是否接受迁居？
+
+---
+
+父母
+
+婚后双方父母养老责任如何承担？
+
+---
+
+彩礼/嫁妆
+
+你如何看待彩礼和嫁妆？
+
+不要问：
+
+«支不支持彩礼？»
+
+而应问具体安排。
+
+---
+
+父母同住
+
+是否接受婚后长期与父母同住？
+
+---
+
+消费
+
+你更倾向哪种家庭消费模式？
+
+---
+
+冲突
+
+出现严重争论后，你通常希望如何解决？
+
+---
+
+社交
+
+伴侣与异性的社交边界应该是什么？
+
+---
+
+16. 用户价值观规则
+
+表：
+
+user_compatibility_rules
+
+字段：
+
+id
+user_id
+question_id
+
+own_answer JSONB
+
+accepted_answers JSONB
+
+importance SMALLINT
+
+is_hard BOOLEAN
+
+created_at
+updated_at
+
+importance：
+
+0 = 不在意
+1 = 很低
+2 = 较低
+3 = 一般
+4 = 重要
+5 = 非常重要
+
+---
+
+17. 匹配算法
+
+必须分两层。
+
+第一层：Hard Filter
+
+定义：
+
+Eligible(A,B)
+
+必须满足：
+
+A 满足 B 的所有硬条件
+
+AND
+
+B 满足 A 的所有硬条件
+
+否则：
+
+eligible = false
+
+不得因为其他条件很好而补偿。
+
+例如：
+
+A：坚决要孩子
+B：坚决不要孩子
+
+即使其他项目全部100分：
+
+eligible = false
+
+---
+
+18. Soft Score
+
+硬筛通过以后计算。
+
+得到两个分数：
+
+PreferenceScore
+CompatibilityScore
+
+最后：
+
+OverallCompatibility =
+0.4 * PreferenceScore
++
+0.6 * CompatibilityScore
+
+系数以后通过后台配置。
+
+不得把结果叫：
+
+婚姻成功率 87%
+
+应该叫：
+
+条件契合度
+关系观念兼容度
+综合匹配度
+
+明确说明：
+
+只是根据双方填写条件计算，不代表婚姻成功概率。
+
+---
+
+19. 缺失答案
+
+如果某项：
+
+A 没填
+或
+B 没填
+
+则：
+
+不计入该项分母。
+
+禁止：
+
+没填写 = 0分
+
+如果有效价值观问题不足6个：
+
+显示：
+
+关系观念数据不足
+
+而不是生成虚假的精确分数。
+
+---
+
+20. 婚恋市场漏斗
+
+这是整个产品最重要的页面之一。
+
+例如：
+
+本站目标性别用户        8,412
+↓
+年龄                   4,821
+↓
+城市                   2,104
+↓
+婚姻状态               1,832
+↓
+生育观                 1,026
+↓
+你的全部硬条件           384
+↓
+同时你符合对方要求        73
+
+显示：
+
+双向基础候选率：
+
+73 / 8412
+= 0.87%
+
+---
+
+21. 筛选损失分析
+
+需要提供两种分析。
+
+A. 顺序漏斗
+
+按照固定顺序依次加入筛选条件。
+
+明确标注：
+
+“按当前条件顺序计算”
+
+因为条件顺序会影响每一步损失。
+
+---
+
+B. 条件敏感性分析
+
+这个更重要。
+
+对每个条件进行 Leave-One-Out：
+
+假设当前最终候选：
+
+73人
+
+取消：
+
+身高 ≥180
+
+重新计算：
+
+126人
+
+显示：
+
+身高条件：
+
+73 → 126
+
+候选池 +72.6%
+
+例如：
+
+年收入 ≥50万
+73 → 211
+
+年龄 ≤30
+73 → 118
+
+本科以上
+73 → 82
+
+然后告诉用户：
+
+对你候选池影响最大的三个条件：
+
+1. 收入
+2. 身高
+3. 年龄
+
+这将是产品核心差异化功能。
+
+---
+
+22. 理论人口数据模型
+
+不要在代码中硬编码：
+
+“全国30岁本科女性有XX%”
+
+后台必须支持数据集。
+
+表：
+
+baseline_datasets
+
+字段：
+
+id
+name
+version
+source_name
+source_url
+source_year
+description
+methodology
+disclaimer
+active
+created_at
+
+---
+
+23. Baseline Records
+
+表：
+
+baseline_records
+
+采用：
+
+加权匿名样本模型。
+
+字段：
+
+id
+dataset_id
+
+gender
+age
+province_code
+city_code
+
+height_cm
+education_level
+annual_income_band
+marital_status
+children_count
+wants_children
+
+sample_weight
+
+例如一条记录：
+
+女性
+29岁
+本科
+上海
+165cm
+未婚
+20-30万
+weight = 183.7
+
+代表该样本对应约183.7个总体人口单位。
+
+理论候选总数：
+
+SUM(sample_weight)
+
+这样同一套筛选引擎可以直接复用。
+
+---
+
+24. 理论市场不能计算假双向
+
+如果基准人口数据只有人口属性，没有：
+
+对方择偶偏好
+
+那么理论市场只能显示：
+
+“符合你条件的人约占 X%”
+
+禁止显示：
+
+“双向匹配率 X%”
+
+只有本站真实用户才能进行真正双向筛选。
+
+---
+
+25. Baseline 数据导入
+
+后台支持：
+
+CSV Import
+
+功能：
+
+上传
+校验
+预览
+导入
+激活
+回滚
+
+任何时间只能有一个：
+
+active dataset
+
+开发环境允许：
+
+demo dataset
+
+生产环境禁止把虚构 Demo 数据冒充真实统计数据。
+
+---
+
+26. Calculator Runs
+
+表：
+
+calculator_runs
+
+字段：
+
+id
+
+user_id nullable
+anonymous_session_id nullable
+
+dataset_id
+
+input_snapshot JSONB
+result_snapshot JSONB
+
+share_token nullable
+created_at
+
+用途：
+
+- 分析用户最常设置的条件
+- 重现计算结果
+- 分享结果
+- 产品漏斗分析
+
+---
+
+27. 照片
+
+表：
+
+user_photos
+
+字段：
+
+id
+user_id
+object_key
+sort_order
+is_primary
+moderation_status
+created_at
+deleted_at
+
+禁止保存永久公开 URL。
+
+保存：
+
+object_key
+
+显示时产生：
+
+signed URL
+
+上传必须：
+
+- 检查 MIME
+- 限制图片尺寸
+- 限制文件大小
+- 去除 EXIF
+- 特别去除 GPS 信息
+
+---
+
+28. Like / Pass
+
+表：
+
+interactions
+
+字段：
+
+id
+actor_user_id
+target_user_id
+action
+source
+created_at
+updated_at
+
+action：
+
+like
+pass
+
+唯一约束：
+
+(actor_user_id, target_user_id)
+
+允许以后修改选择。
+
+---
+
+29. Match
+
+当：
+
+A likes B
+AND
+B likes A
+
+创建：
+
+matches
+
+字段：
+
+id
+user_a_id
+user_b_id
+status
+matched_at
+ended_at
+created_at
+
+确保：
+
+A-B
+B-A
+
+永远不会创建两个 Match。
+
+---
+
+30. 第一版暂不开聊天
+
+形成 Match 后显示：
+
+你们已经互相感兴趣。
+
+可以：
+
+查看对方资料
+取消 Match
+举报
+屏蔽
+
+聊天功能使用 Feature Flag：
+
+chat_enabled = false
+
+未来达到一定用户密度以后再实现 WebSocket IM。
+
+不要为了未来聊天提前构建复杂 IM 系统。
+
+---
+
+31. 真实结果反馈
+
+这个数据以后非常重要。
+
+表：
+
+match_outcomes
+
+用户可以主动反馈：
+
+已交换联系方式
+已经聊过
+已经线下见面
+正在约会
+建立稳定关系
+已订婚
+已结婚
+没有继续
+
+字段：
+
+id
+match_id
+reporter_user_id
+outcome_type
+occurred_at
+note nullable
+created_at
+
+双方都反馈：
+
+met_offline
+
+则可以标记：
+
+confirmed_meeting = true
+
+不要读取私人聊天内容来推断是否见面。
+
+---
+
+32. Block
+
+表：
+
+user_blocks
+
+字段：
+
+blocker_user_id
+blocked_user_id
+created_at
+
+一旦 Block：
+
+双方：
+
+不可互相发现
+不可查看资料
+不可互动
+
+---
+
+33. 举报
+
+表：
+
+user_reports
+
+字段：
+
+id
+reporter_user_id
+reported_user_id
+reason
+description
+evidence_keys JSONB
+status
+reviewer_id
+reviewed_at
+created_at
+
+reason：
+
+诈骗
+骚扰
+虚假资料
+盗图
+色情
+广告
+已婚冒充单身
+其他
+
+---
+
+34. 隐私保护：小样本禁止显示精确人数
+
+这是必须实现的。
+
+例如真实数据库筛选后只有：
+
+3人
+
+禁止告诉用户：
+
+你所在城市符合条件的31岁博士女性一共有3人。
+
+存在反向识别风险。
+
+设置：
+
+K_ANONYMITY_THRESHOLD = 10
+
+小于10：
+
+统一显示：
+
+<10
+
+数据库内部仍保留实际值。
+
+---
+
+35. 用户发现条件
+
+一个用户进入 Candidate Pool 必须：
+
+status = active
+discovery_enabled = true
+profile_completion >= 80%
+age >= 18
+not blocked
+not deleted
+
+推荐候选必须同时：
+
+Eligible(A,B) = true
+
+---
+
+36. Candidate 页面
+
+每张卡片显示：
+
+昵称
+年龄
+城市
+身高
+学历
+职业类别
+婚姻状态
+婚育意愿
+主要照片
+
+条件契合度
+关系观念兼容度
+
+可以展开：
+
+为什么匹配？
+
+例如：
+
+✓ 年龄符合双方要求
+✓ 婚育观一致
+✓ 城市一致
+✓ 双方学历条件满足
+
+财务观念        90%
+家务分工        80%
+育儿观念        100%
+父母边界        75%
+生活方式        70%
+
+不要只给：
+
+匹配度87%
+
+而没有解释。
+
+---
+
+37. 首页
+
+游客首页：
+
+婚恋市场计算器
+
+CTA：
+
+算算我的候选池
+
+次级入口：
+
+登录
+
+---
+
+38. 计算器流程
+
+建议分步骤，而不是一个巨大表单。
+
+Step 1
+
+我是谁
+
+年龄、性别、城市、身高等。
+
+Step 2
+
+我希望找谁
+
+年龄、城市、身高等。
+
+Step 3
+
+我的硬条件
+
+每个条件可以：
+
+必须
+偏好
+不在意
+
+Step 4
+
+计算。
+
+Result
+
+显示：
+
+理论候选比例
+漏斗
+最大筛选条件
+敏感性分析
+
+CTA：
+
+注册，看看本站真实候选人
+
+---
+
+39. 注册后的 Onboarding
+
+建议6页以内：
+
+1 基础信息
+2 教育/职业
+3 婚姻与生育
+4 生活方式
+5 我的择偶要求
+6 关系价值观
+
+顶部显示：
+
+完成度 67%
+
+允许保存退出。
+
+---
+
+40. 前端页面
+
+至少实现：
+
+/pages/index
+/pages/calculator/index
+/pages/calculator/result
+
+/pages/auth/login
+
+/pages/onboarding/basic
+/pages/onboarding/career
+/pages/onboarding/marriage
+/pages/onboarding/lifestyle
+/pages/onboarding/preferences
+/pages/onboarding/compatibility
+
+/pages/discovery/index
+/pages/discovery/funnel
+/pages/discovery/sensitivity
+
+/pages/candidate/detail
+
+/pages/matches/index
+/pages/matches/detail
+
+/pages/profile/index
+/pages/profile/edit
+
+/pages/settings/index
+/pages/settings/privacy
+/pages/settings/account
+
+/pages/report/index
+
+---
+
+41. 核心 API
+
+Metadata
+
+GET /api/v1/meta/options
+GET /api/v1/meta/regions
+GET /api/v1/meta/compatibility-questions
+GET /api/v1/meta/app-config
+
+Calculator
+
+POST /api/v1/calculator/estimate
+POST /api/v1/calculator/share
+GET  /api/v1/calculator/share/{token}
+
+Profile
+
+GET /api/v1/me/profile
+PUT /api/v1/me/profile
+
+Preference
+
+GET /api/v1/me/preferences
+PUT /api/v1/me/preferences
+
+Compatibility
+
+GET /api/v1/me/compatibility
+PUT /api/v1/me/compatibility
+
+Discovery
+
+GET /api/v1/discovery/summary
+GET /api/v1/discovery/funnel
+GET /api/v1/discovery/sensitivity
+GET /api/v1/discovery/candidates
+GET /api/v1/discovery/candidates/{id}
+
+Interaction
+
+PUT /api/v1/interactions/{user_id}
+
+body：
+
+{
+  "action": "like"
+}
+
+Matches
+
+GET  /api/v1/matches
+GET  /api/v1/matches/{id}
+POST /api/v1/matches/{id}/outcomes
+
+Safety
+
+POST /api/v1/users/{id}/block
+DELETE /api/v1/users/{id}/block
+POST /api/v1/users/{id}/report
+
+---
+
+42. API 返回规范
+
+统一：
+
+{
+  "code": "OK",
+  "message": "",
+  "data": {},
+  "request_id": "..."
+}
+
+错误：
+
+{
+  "code": "PROFILE_INCOMPLETE",
+  "message": "请先完善个人资料",
+  "request_id": "..."
+}
+
+HTTP 状态码必须正确使用。
+
+---
+
+43. 分页
+
+候选列表禁止 offset 深分页。
+
+使用：
+
+cursor pagination
+
+例如：
+
+GET /candidates?cursor=xxx&limit=20
+
+---
+
+44. 数据库其他表
+
+另外实现：
+
+auth_refresh_tokens
+
+verification_records
+
+consent_records
+
+system_settings
+
+audit_logs
+
+product_events
+
+---
+
+45. Verification Records
+
+预留：
+
+phone
+identity
+education
+income
+marriage_status
+
+状态：
+
+unverified
+pending
+verified
+rejected
+expired
+
+第一版只真正实现：
+
+phone
+
+其他显示：
+
+未开放
+
+---
+
+46. System Settings
+
+表：
+
+system_settings
+
+key/value JSONB。
+
+例如：
+
+chat_enabled
+payments_enabled
+registration_enabled
+discovery_enabled
+calculator_enabled
+
+min_profile_completion
+k_anonymity_threshold
+
+preference_score_weight
+compatibility_score_weight
+
+禁止为了改一个业务参数重新发版。
+
+---
+
+47. Product Events
+
+表：
+
+product_events
+
+至少记录：
+
+app_open
+
+calculator_started
+calculator_completed
+
+registration_started
+registration_completed
+
+profile_completed
+market_joined
+
+discovery_viewed
+candidate_impression
+
+candidate_liked
+candidate_passed
+
+match_created
+
+outcome_contact_exchanged
+outcome_offline_meeting
+outcome_relationship
+
+字段：
+
+id
+user_id nullable
+anonymous_id nullable
+event_name
+properties JSONB
+occurred_at
+
+以后可迁移到：
+
+PostHog / ClickHouse
+
+第一版 PostgreSQL 足够。
+
+---
+
+48. 商业指标后台
+
+管理员 Dashboard 至少显示：
+
+总注册人数
+
+新增注册
+DAU
+WAU
+MAU
+
+Profile完成率
+
+加入真实婚恋池人数
+
+男女比例
+城市分布
+年龄分布
+
+平均单向候选数
+平均双向候选数
+
+Like数量
+Match数量
+
+Match Rate
+
+线下见面报告数
+双方确认线下见面数
+
+建立关系报告数
+
+这是以后判断：
+
+是否值得成立公司
+是否应该开始付费
+是否应该增加推广
+
+的重要数据。
+
+---
+
+49. 核心经营漏斗
+
+后台必须直接显示：
+
+访问 Calculator
+
+↓
+
+完成 Calculator
+
+↓
+
+注册
+
+↓
+
+完成 Profile
+
+↓
+
+加入婚恋池
+
+↓
+
+出现 Eligible Candidate
+
+↓
+
+Like
+
+↓
+
+Match
+
+↓
+
+线下见面
+
+↓
+
+建立关系
+
+每一步显示：
+
+人数
+转换率
+
+---
+
+50. 隐私
+
+MVP 不采集：
+
+身份证号码
+精确家庭住址
+GPS精确坐标
+银行卡
+完整工资流水
+
+除非以后明确增加认证服务。
+
+仅保存：
+
+城市
+可选行政区
+
+不保存住宅位置。
+
+---
+
+51. 用户注销
+
+用户点击注销后：
+
+立即：
+
+discovery_enabled = false
+
+其他用户无法再查看。
+
+进入：
+
+deletion_pending
+
+经过可配置保留期以后：
+
+删除或匿名化：
+
+手机号
+Profile
+Preference
+照片
+
+保留必须保留的安全/审计数据时不得继续包含非必要个人信息。
+
+---
+
+52. Consent
+
+表：
+
+consent_records
+
+记录：
+
+user_id
+consent_type
+policy_version
+consented_at
+
+至少：
+
+terms_of_service
+privacy_policy
+market_participation
+
+必须保存版本号。
+
+---
+
+53. 管理后台权限
+
+Admin 默认不能直接查看完整手机号。
+
+敏感信息必须：
+
+按权限
++
+操作日志
+
+任何：
+
+冻结用户
+删除内容
+修改基准数据
+修改系统设置
+
+都进入：
+
+audit_logs
+
+---
+
+54. 图片存储
+
+开发：
+
+MinIO
+
+生产：
+
+阿里云 OSS
+或
+腾讯云 COS
+
+抽象：
+
+type ObjectStorage interface {
+    Put(...)
+    Delete(...)
+    SignedURL(...)
+}
+
+不要将业务代码和某家云厂商强绑定。
+
+---
+
+55. Redis
+
+Redis 用于：
+
+短信验证码
+Rate Limit
+短期 Session
+分布式锁
+热点 Calculator 缓存
+
+不得把核心 Profile 数据只放 Redis。
+
+---
+
+56. Rate Limit
+
+至少：
+
+短信：
+
+同手机号：
+60秒一次
+
+每日最多5次
+
+IP：
+
+可配置。
+
+登录、Calculator 等接口同样需要基本限流。
+
+---
+
+57. 数据库索引
+
+至少重点建立：
+
+users(status, discovery_enabled)
+
+user_profiles(gender)
+user_profiles(birth_date)
+user_profiles(city_code)
+user_profiles(height_cm)
+user_profiles(education_level)
+user_profiles(annual_income_band)
+user_profiles(marital_status)
+
+interactions(actor_user_id, target_user_id)
+
+matches(user_a_id)
+matches(user_b_id)
+
+baseline_records(dataset_id)
+baseline_records(gender)
+baseline_records(age)
+baseline_records(city_code)
+
+数组条件需要：
+
+GIN Index
+
+但不要盲目给每个字段建索引。
+
+必须用：
+
+EXPLAIN ANALYZE
+
+验证关键 Candidate Query。
+
+---
+
+58. Candidate Query 性能目标
+
+在：
+
+100,000
+
+个真实 Profile 条件下：
+
+普通 Candidate 查询：
+
+P95 < 500ms
+
+Calculator：
+
+P95 < 1s
+
+早期不需要为了百万用户过度设计。
+
+---
+
+59. 缓存
+
+Calculator 可以缓存：
+
+dataset_version
++
+normalized_filter_hash
+
+相同条件直接命中 Redis。
+
+真实候选池结果不能长期缓存。
+
+---
+
+60. 日志
+
+使用结构化 JSON 日志：
+
+timestamp
+level
+request_id
+user_id
+method
+path
+latency
+status
+error_code
+
+严禁日志输出：
+
+手机号
+JWT
+验证码
+完整个人资料
+
+---
+
+61. 可观测性
+
+必须有：
+
+GET /health/live
+GET /health/ready
+
+支持：
+
+Prometheus metrics
+
+至少统计：
+
+HTTP请求
+错误率
+响应时间
+DB连接
+Redis状态
+
+---
+
+62. 数据备份
+
+生产环境：
+
+PostgreSQL：
+
+每日备份
+
+建议：
+
+7个日备份
+4个周备份
+
+上传对象存储。
+
+README 必须写清：
+
+backup
+restore
+
+命令。
+
+---
+
+63. Docker
+
+本地：
+
+docker compose up
+
+必须可以启动：
+
+PostgreSQL
+Redis
+MinIO
+backend
+
+前端开发服务器可单独启动。
+
+---
+
+64. 环境
+
+必须支持：
+
+development
+staging
+production
+
+配置全部来自：
+
+Environment Variables
+
+禁止：
+
+代码中写数据库密码
+OSS Secret
+JWT Secret
+
+---
+
+65. 开发数据
+
+提供：
+
+seed
+
+生成：
+
+200个虚构用户
+
+供匹配测试。
+
+明显标记：
+
+TEST DATA
+
+Production 环境禁止执行测试 Seed。
+
+---
+
+66. 测试
+
+匹配算法属于核心业务。
+
+必须重点测试：
+
+A符合B，但B不符合A
+→ 不得 Eligible
+
+双方符合
+→ Eligible
+
+硬条件冲突
+→ false
+
+软条件冲突
+→ 仍可 Eligible
+
+Block以后
+→ 不再出现
+
+年龄边界
+身高边界
+空答案
+数组条件
+
+Calculator 必须测试：
+
+条件逐层收紧
+→ 候选数不得增加
+
+敏感性分析必须测试：
+
+取消一个筛选条件
+→ 候选数不得减少
+
+---
+
+67. 数据库测试
+
+集成测试必须使用真实 PostgreSQL。
+
+不要用 SQLite 假装 PostgreSQL。
+
+CI：
+
+启动 PostgreSQL Container
+→ Migration
+→ Seed
+→ Go Test
+
+---
+
+68. 前端体验
+
+用户第一次完成 Calculator：
+
+目标时间：
+
+< 2分钟
+
+注册以后完成核心 Profile：
+
+< 5分钟
+
+不要一次展示40个输入框。
+
+---
+
+69. UI 基本原则
+
+整个产品视觉倾向：
+
+理性
+干净
+数据化
+中性
+
+不要使用：
+
+男性价值
+女性价值
+高价值男人
+优质女性
+剩女
+屌丝
+女拳
+龟男
+
+这类价值判断。
+
+产品表达应该类似：
+
+市场供需数据
+
+而不是：
+
+男女战争社区
+
+---
+
+70. 重要文案原则
+
+不要告诉用户：
+
+你不合格
+
+应该显示：
+
+你与该用户的硬条件存在1项冲突
+
+不要：
+
+这个女人要求太高
+
+应该：
+
+该条件使其候选池减少68%
+
+不要：
+
+你只有0.7%的女人能选
+
+应该：
+
+在当前条件组合下，
+约0.7%的目标用户符合你的单向筛选条件。
+
+---
+
+71. 第一阶段不使用机器学习
+
+严禁一开始引入：
+
+Embedding
+Vector DB
+LLM
+深度学习推荐
+
+第一版所有结果必须：
+
+可解释
+可复现
+可测试
+
+只有积累真实数据以后，未来才考虑：
+
+Like probability
+Match probability
+Reply probability
+Meeting probability
+
+等推荐模型。
+
+---
+
+72. 第一阶段核心 North Star
+
+后台重点显示：
+
+Confirmed Offline Meetings / 1000 MAU
+
+即：
+
+每1000个月活用户
+产生多少次双方确认的线下见面
+
+辅助指标：
+
+Reciprocal Eligible Candidates / User
+
+Match / MAU
+
+Confirmed Meetings / Match
+
+不要把：
+
+DAU
+
+作为唯一北极星指标。
+
+---
+
+73. Feature Flags
+
+至少：
+
+calculator_enabled
+
+registration_enabled
+
+discovery_enabled
+
+likes_enabled
+
+matches_enabled
+
+chat_enabled
+
+payments_enabled
+
+verification_enabled
+
+后台可以切换。
+
+---
+
+74. 推荐上线策略
+
+功能阶段：
+
+Phase 1
+
+Calculator
+Baseline Dataset
+分享结果
+
+无需真实婚恋用户也有价值。
+
+Phase 2
+
+注册
+Profile
+Preferences
+Compatibility Questions
+
+Phase 3
+
+真实候选池
+漏斗
+条件敏感性
+
+Phase 4
+
+Like
+Match
+Outcome
+Report
+Block
+
+Phase 5
+
+用户量足够以后：
+
+Chat
+Push
+Verification
+Payments
+
+---
+
+75. 第一版数据库关系
+
+主要关系：
+
+users
+  1 ─ 1 user_profiles
+
+users
+  1 ─ 1 partner_preferences
+
+users
+  1 ─ N user_photos
+
+users
+  1 ─ N user_compatibility_rules
+
+compatibility_questions
+  1 ─ N user_compatibility_rules
+
+users
+  N ─ N users
+        via interactions
+
+users
+  N ─ N users
+        via matches
+
+matches
+  1 ─ N match_outcomes
+
+baseline_datasets
+  1 ─ N baseline_records
+
+users
+  1 ─ N calculator_runs
+
+---
+
+76. 关键约束
+
+数据库必须建立：
+
+UNIQUE interactions(actor_user_id,target_user_id)
+
+以及 Match Pair 唯一约束。
+
+所有：
+
+user_id
+dataset_id
+match_id
+
+必须正确设置 FK。
+
+不能完全依赖 Go 代码维护关系完整性。
+
+---
+
+77. Definition of Done
+
+项目第一阶段完成时必须做到：
+
+游客
+
+能：
+
+打开H5
+填写条件
+获得理论市场结果
+查看漏斗
+查看条件敏感性
+
+用户
+
+能：
+
+手机号注册
+完善Profile
+填写Preference
+填写价值观问题
+主动加入真实婚恋市场
+
+Discovery
+
+系统能正确：
+
+单向筛选
+双向硬筛
+软评分
+价值观评分
+排序
+
+Interaction
+
+用户可以：
+
+Like
+Pass
+形成Match
+Block
+Report
+反馈线下见面
+
+Admin
+
+能：
+
+导入Baseline
+维护问题
+冻结用户
+处理举报
+查看核心运营漏斗
+
+Deployment
+
+能：
+
+docker compose up
+
+运行后端开发环境。
+
+README 必须完整包含：
+
+安装
+配置
+Migration
+Seed
+启动
+测试
+构建H5
+构建Android
+构建iOS
+部署
+备份
+恢复
+
+---
+
+78. Agent 开发原则
+
+请严格遵循：
+
+1. 先建立完整数据库 Migration。
+2. 再建立 OpenAPI。
+3. 再生成后端 Domain/Repository/Service。
+4. 先完成 Calculator Engine。
+5. 再完成 Matching Engine。
+6. 对两个核心 Engine 编写充分单元测试。
+7. 再开发 API。
+8. 最后开发 uni-app 页面。
+9. 每完成一个阶段必须保证项目可编译、测试可运行。
+10. 不得一次生成大量无法编译的占位代码。
+11. 不得擅自增加微服务。
+12. MVP 使用 Modular Monolith。
+13. 不使用 Kubernetes。
+14. 不使用 Kafka。
+15. 不使用 Elasticsearch。
+16. 不使用 Vector Database。
+17. 不使用 LLM。
+18. 不进行超前百万级架构设计。
+
+总体原则：
+
+«先让1000个人真正可以使用，再考虑100万人。»
