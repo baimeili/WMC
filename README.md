@@ -9,6 +9,39 @@
 
 两个市场严格区分：理论市场只给估算比例，绝不输出精确人数或「双向匹配率」；真实市场只统计已注册、主动入池、账户正常的用户。
 
+## 快速开始（一键启动，先看效果）
+
+```powershell
+# 启动数据库 + 后端 + H5 + 运营后台（已运行的组件会自动跳过，不会重复启动）
+powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/start.ps1
+
+# 停止全部（数据库优雅停止，数据保留）
+powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/stop.ps1
+```
+
+启动后本机固定运行 4 个进程：
+
+| 组件 | 端口 | 访问地址 | 说明 |
+|---|---|---|---|
+| PostgreSQL（便携版，无需 Docker） | 55432 | `postgres://wmc:wmc_local_password@localhost:55432/wmc` | 数据目录 `backend/.data/pg` |
+| 后端 API | 8080 | http://127.0.0.1:8080/health/ready | 所有前端都调用它 |
+| H5 客户端（uni-app） | 5173 | **http://localhost:5173** | 普通用户端 |
+| 运营后台（Vue + Element Plus） | 5174 | **http://localhost:5174/admin/** | 管理员端 |
+
+> 前端开发服务器只监听 IPv6 的 `localhost`，请使用 `http://localhost:5173` / `http://localhost:5174/admin/`，不要用 `127.0.0.1`。
+
+常用参数：`-SkipFrontend`（只起数据库和 API）、`-SkipDb`、`-SkipApi`、`-SkipBuild`（用已有二进制加快启动）、`-Force`（先停再起）。日志在 `.data/logs/`，PID 在 `.data/pids/`。
+
+### 演示账号（开发环境）
+
+| 身份 | 从哪里登录 | 账号 / 密码 |
+|---|---|---|
+| 运营后台管理员 | 后台登录页 →「管理员开发登录」 | 手机号 `13800000000`（super_admin），无需验证码 |
+| 普通用户（已入池，可直接看候选池） | H5 登录页 → 手机号 + 验证码 | 手机号 `13700000199`（或 13700000001 ~ 13700000200 任意一个），验证码 `123456` |
+| 全新用户 | H5 登录页 → 任意手机号 + 验证码 | 验证码 `123456`，首次验证自动注册；需完善资料到 80% 并同意三项协议后才能加入婚恋池 |
+
+说明：固定验证码 `123456` 只在开发环境（`SMS_PROVIDER=mock`）生效；生产环境启动会强制拒绝 mock 短信。种子数据均为 TEST DATA：200 个虚构用户资料完整度 100%、已入池，另有一个 DEMO 基准数据集（页面会明确标注「非真实统计」）。
+
 ## 当前状态（2026-11-01 验收）
 
 | 阶段 | 内容 | 状态 |
