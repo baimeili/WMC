@@ -1,0 +1,212 @@
+// 运营后台全局样式：统一页面留白、卡片、筛选区与统计卡片外观。
+:root {
+  --wmc-bg: #f5f7fa;
+  --wmc-card-bg: #ffffff;
+  --wmc-border: #e4e7ed;
+  --wmc-text-primary: #303133;
+  --wmc-text-regular: #606266;
+  --wmc-text-secondary: #909399;
+  --wmc-brand: #409eff;
+  --wmc-brand-dark: #1f2d3d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--wmc-bg);
+  color: var(--wmc-text-primary);
+  font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 14px;
+}
+
+a {
+  color: var(--wmc-brand);
+  text-decoration: none;
+}
+
+// 页面容器
+.page {
+  padding: 20px 24px 32px;
+}
+
+.page-title {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.page-desc {
+  margin: 0 0 16px;
+  color: var(--wmc-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.page-card {
+  background: var(--wmc-card-bg);
+  border: 1px solid var(--wmc-border);
+  border-radius: 8px;
+  padding: 18px 20px;
+}
+
+.page-card + .page-card {
+  margin-top: 16px;
+}
+
+.card-title {
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.card-title-row .card-title {
+  margin-bottom: 0;
+}
+
+// 筛选区
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.filter-bar .filter-spacer {
+  flex: 1;
+}
+
+// 统计卡片网格
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+// 提示与辅助文本
+.muted {
+  color: var(--wmc-text-secondary);
+  font-size: 12px;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
+.hidden-file {
+  display: none;
+}
+
+.mt-8 {
+  margin-top: 8px;
+}
+
+.mt-12 {
+  margin-top: 12px;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+.mb-12 {
+  margin-bottom: 12px;
+}
+
+.text-danger {
+  color: #f56c6c;
+}
+
+.text-warning {
+  color: #e6a23c;
+}
+
+.text-success {
+  color: #67c23a;
+}
+
+// 图片审核卡片
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.photo-card {
+  border: 1px solid var(--wmc-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.photo-card .photo-thumb {
+  width: 100%;
+  height: 180px;
+  display: block;
+  background: #f2f3f5;
+}
+
+.photo-card .photo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 180px;
+  color: var(--wmc-text-secondary);
+  background: #f2f3f5;
+  font-size: 12px;
+}
+
+.photo-card .photo-body {
+  padding: 12px;
+}
+
+.photo-card .photo-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+// 长文本换行
+.pre-wrap {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.json-box {
+  max-height: 420px;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  border-radius: 6px;
+  background: #f5f7fa;
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

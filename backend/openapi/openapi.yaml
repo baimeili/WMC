@@ -1,0 +1,1636 @@
+openapi: 3.1.0
+info:
+  title: 婚恋市场计算器 API
+  version: 1.0.0
+  description: |
+    婚恋市场计算器 + 双向婚恋匹配 MVP 的 HTTP 契约。
+    理论婚恋市场（基准数据集估算）与本站真实婚恋市场必须严格区分，禁止混用。
+    统一响应：{ code, message, data, request_id }。
+servers:
+  - url: /api/v1
+    description: 业务接口前缀
+  - url: /
+    description: 运维接口（/health/*、/metrics）
+tags:
+  - name: meta
+    description: 元数据（选项、区域、问题、开关）
+  - name: auth
+    description: 注册登录
+  - name: calculator
+    description: 理论婚恋市场计算器
+  - name: me
+    description: 当前用户资料与设置
+  - name: discovery
+    description: 本站真实候选池
+  - name: interaction
+    description: Like / Pass / Match / 反馈
+  - name: safety
+    description: Block 与举报
+  - name: admin
+    description: 运营后台
+  - name: ops
+    description: 健康检查与指标
+
+paths:
+  /meta/options:
+    get:
+      tags: [meta]
+      summary: 全部选项字典
+      responses:
+        '200': { $ref: '#/components/responses/OkOptions' }
+  /meta/regions:
+    get:
+      tags: [meta]
+      summary: 行政区划
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Region' }
+  /meta/compatibility-questions:
+    get:
+      tags: [meta]
+      summary: 启用的婚恋价值观问题
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/CompatibilityQuestion' }
+  /meta/app-config:
+    get:
+      tags: [meta]
+      summary: 前端配置与功能开关
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/AppConfig' }
+  /auth/sms/send:
+    post:
+      tags: [auth]
+      summary: 发送短信验证码
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string, description: 中国大陆手机号 }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /auth/sms/verify:
+    post:
+      tags: [auth]
+      summary: 校验验证码并登录（首次自动注册）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, code]
+              properties:
+                phone: { type: string }
+                code: { type: string }
+                anonymous_session_id: { type: string, description: 关联计算器匿名会话 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/TokenPair' }
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: 刷新 Access Token（Refresh Token 轮换）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/TokenPair' }
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: 退出登录并吊销当前 Refresh Token 家族
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /calculator/estimate:
+    post:
+      tags: [calculator]
+      summary: 计算理论婚恋市场估算（游客可用）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CalculatorRequest' }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CalculatorResult' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /calculator/share:
+    post:
+      tags: [calculator]
+      summary: 生成结果分享链接
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [run_id]
+              properties:
+                run_id: { type: string, format: uuid }
+                anonymous_session_id: { type: string }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          share_token: { type: string }
+  /calculator/share/{token}:
+    get:
+      tags: [calculator]
+      summary: 读取分享结果
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CalculatorResult' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /me/profile:
+    get:
+      tags: [me]
+      summary: 获取我的资料
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Profile' }
+    put:
+      tags: [me]
+      summary: 保存我的资料
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProfileInput' }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Profile' }
+  /me/preferences:
+    get:
+      tags: [me]
+      summary: 获取我的择偶条件
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Preferences' }
+    put:
+      tags: [me]
+      summary: 保存我的择偶条件
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PreferencesInput' }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Preferences' }
+  /me/compatibility:
+    get:
+      tags: [me]
+      summary: 获取我的价值观规则
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/CompatibilityRule' }
+    put:
+      tags: [me]
+      summary: 保存我的价值观规则
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rules:
+                  type: array
+                  items: { $ref: '#/components/schemas/CompatibilityRuleInput' }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /me/market/join:
+    post:
+      tags: [me]
+      summary: 加入真实婚恋市场
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [me]
+      summary: 退出真实婚恋市场
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /me/consents:
+    post:
+      tags: [me]
+      summary: 记录协议同意
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [consent_type, policy_version]
+              properties:
+                consent_type: { type: integer, minimum: 1, maximum: 3 }
+                policy_version: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /me/photos:
+    get:
+      tags: [me]
+      summary: 我的照片列表
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Photo' }
+    post:
+      tags: [me]
+      summary: 上传照片（自动去 EXIF/GPS 并压缩）
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                make_primary: { type: boolean }
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Photo' }
+  /me/photos/{id}:
+    delete:
+      tags: [me]
+      summary: 删除照片
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /me/account:
+    delete:
+      tags: [me]
+      summary: 申请注销账号（立即退出婚恋池，保留期后清理）
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /discovery/summary:
+    get:
+      tags: [discovery]
+      summary: 候选池概览（含冷启动与 K 匿名处理）
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/DiscoverySummary' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /discovery/funnel:
+    get:
+      tags: [discovery]
+      summary: 真实候选池漏斗
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/FunnelResult' }
+  /discovery/sensitivity:
+    get:
+      tags: [discovery]
+      summary: 真实候选池条件敏感性（Leave-One-Out）
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/SensitivityResult' }
+  /discovery/candidates:
+    get:
+      tags: [discovery]
+      summary: 双向基础候选人列表（游标分页）
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CandidatePage' }
+  /discovery/candidates/{id}:
+    get:
+      tags: [discovery]
+      summary: 候选人详情（含匹配解释）
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CandidateDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /interactions/{user_id}:
+    put:
+      tags: [interaction]
+      summary: 对某个用户 Like / Pass（可修改）
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: integer, enum: [1, 2], description: 1 Like 2 Pass }
+                source: { type: integer, enum: [1, 2, 3], default: 1 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          matched: { type: boolean }
+                          match_id: { type: string, format: uuid, nullable: true }
+  /matches:
+    get:
+      tags: [interaction]
+      summary: 我的 Match 列表
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/MatchPage' }
+  /matches/{id}:
+    get:
+      tags: [interaction]
+      summary: Match 详情
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/MatchDetail' }
+  /matches/{id}/outcomes:
+    post:
+      tags: [interaction]
+      summary: 反馈真实结果（已联系/已见面/建立关系等）
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [outcome_type]
+              properties:
+                outcome_type: { type: integer, minimum: 1, maximum: 8 }
+                occurred_at: { type: string, format: date-time, nullable: true }
+                note: { type: string, maxLength: 500 }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /users/{id}/block:
+    post:
+      tags: [safety]
+      summary: 屏蔽用户（双向不可见）
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+    delete:
+      tags: [safety]
+      summary: 取消屏蔽
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /users/{id}/report:
+    post:
+      tags: [safety]
+      summary: 举报用户
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: integer, minimum: 1, maximum: 8 }
+                description: { type: string, maxLength: 1000 }
+                evidence_keys: { type: array, items: { type: string } }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /events:
+    post:
+      tags: [meta]
+      summary: 上报产品事件
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [event_name]
+              properties:
+                event_name: { type: string }
+                anonymous_id: { type: string }
+                properties: { type: object, additionalProperties: true }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /admin/auth/dev-login:
+    post:
+      tags: [admin]
+      summary: 开发环境管理员登录（生产返回 404）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string, description: 已是管理员的手机号 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/TokenPair' }
+  /admin/dashboard:
+    get:
+      tags: [admin]
+      summary: 运营看板（含 North Star）
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/AdminDashboard' }
+  /admin/users:
+    get:
+      tags: [admin]
+      summary: 用户查询（分页）
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: keyword
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: integer }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: page_size
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/AdminUserPage' }
+  /admin/users/{id}/freeze:
+    post:
+      tags: [admin]
+      summary: 冻结用户（写审计日志）
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /admin/users/{id}/unfreeze:
+    post:
+      tags: [admin]
+      summary: 解冻用户
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /admin/reports:
+    get:
+      tags: [admin]
+      summary: 举报列表
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Report' }
+  /admin/reports/{id}/resolve:
+    post:
+      tags: [admin]
+      summary: 处理举报
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: integer, minimum: 2, maximum: 4 }
+                note: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /admin/baseline/datasets:
+    get:
+      tags: [admin]
+      summary: 基准数据集列表
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/BaselineDataset' }
+    post:
+      tags: [admin]
+      summary: 创建数据集（草稿）
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BaselineDatasetInput' }
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/BaselineDataset' }
+  /admin/baseline/datasets/{id}/import:
+    post:
+      tags: [admin]
+      summary: 导入 CSV（校验通过后写库）
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                dry_run: { type: boolean, default: false, description: 仅校验并预览 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ImportReport' }
+  /admin/baseline/datasets/{id}/activate:
+    post:
+      tags: [admin]
+      summary: 激活数据集（同时只能有一个）
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /admin/baseline/datasets/{id}/rollback:
+    post:
+      tags: [admin]
+      summary: 回滚数据集（删除记录并归档）
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /admin/questions:
+    get:
+      tags: [admin]
+      summary: 全部价值观问题
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/CompatibilityQuestion' }
+    post:
+      tags: [admin]
+      summary: 新增问题
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CompatibilityQuestionInput' }
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CompatibilityQuestion' }
+  /admin/questions/{id}:
+    put:
+      tags: [admin]
+      summary: 修改问题
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CompatibilityQuestionInput' }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CompatibilityQuestion' }
+  /admin/settings:
+    get:
+      tags: [admin]
+      summary: 系统参数与 Feature Flag
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/SettingsBundle' }
+    put:
+      tags: [admin]
+      summary: 更新系统参数
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key: { type: string }
+                value: {}
+      responses:
+        '200': { $ref: '#/components/responses/OkEmpty' }
+  /admin/audit-logs:
+    get:
+      tags: [admin]
+      summary: 审计日志
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/AuditLog' }
+  /health/live:
+    get:
+      tags: [ops]
+      summary: 存活检查
+      servers: [{ url: / }]
+      responses:
+        '200': { description: 存活 }
+  /health/ready:
+    get:
+      tags: [ops]
+      summary: 就绪检查（数据库与 Redis）
+      servers: [{ url: / }]
+      responses:
+        '200': { description: 就绪 }
+        '503': { description: 依赖未就绪 }
+  /metrics:
+    get:
+      tags: [ops]
+      summary: Prometheus 指标
+      servers: [{ url: / }]
+      responses:
+        '200': { description: 指标文本 }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    OkEmpty:
+      description: 成功
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Envelope' }
+    OkOptions:
+      description: 成功
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items: { $ref: '#/components/schemas/Option' }
+    Conflict:
+      description: 状态冲突
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Envelope' }
+    NotFound:
+      description: 不存在
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Envelope' }
+    RateLimited:
+      description: 触发限流
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Envelope' }
+  schemas:
+    Envelope:
+      type: object
+      required: [code, message, request_id]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: {}
+        request_id: { type: string }
+    Option:
+      type: object
+      required: [value, label]
+      properties:
+        value: { type: integer }
+        label: { type: string }
+    Region:
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        level: { type: integer }
+        parent_code: { type: string, nullable: true }
+    AppConfig:
+      type: object
+      properties:
+        features:
+          type: object
+          additionalProperties: { type: boolean }
+        settings:
+          type: object
+          additionalProperties: true
+        policy_versions:
+          type: object
+          additionalProperties: { type: string }
+    TokenPair:
+      type: object
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        expires_in: { type: integer }
+        user_id: { type: string, format: uuid }
+        role: { type: integer }
+        profile_completion: { type: integer }
+        discovery_enabled: { type: boolean }
+    CompatibilityQuestion:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        category: { type: string }
+        title: { type: string }
+        description: { type: string }
+        question_type: { type: integer }
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              value: { type: string }
+              label: { type: string }
+        active: { type: boolean }
+        sort_order: { type: integer }
+        version: { type: integer }
+    CompatibilityQuestionInput:
+      type: object
+      required: [code, category, title, options]
+      properties:
+        code: { type: string }
+        category: { type: string }
+        title: { type: string }
+        description: { type: string }
+        question_type: { type: integer }
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              value: { type: string }
+              label: { type: string }
+        active: { type: boolean }
+        sort_order: { type: integer }
+    CompatibilityRule:
+      type: object
+      properties:
+        question_id: { type: string, format: uuid }
+        question_code: { type: string }
+        own_answer: { type: array, items: { type: string } }
+        accepted_answers: { type: array, items: { type: string } }
+        importance: { type: integer }
+        is_hard: { type: boolean }
+    CompatibilityRuleInput:
+      type: object
+      required: [question_id, own_answer, accepted_answers]
+      properties:
+        question_id: { type: string, format: uuid }
+        own_answer: { type: array, items: { type: string } }
+        accepted_answers: { type: array, items: { type: string } }
+        importance: { type: integer, minimum: 0, maximum: 5 }
+        is_hard: { type: boolean }
+    Profile:
+      type: object
+      properties:
+        user_id: { type: string, format: uuid }
+        nickname: { type: string }
+        gender: { type: integer }
+        birth_date: { type: string, nullable: true }
+        age: { type: integer, nullable: true }
+        province_code: { type: string }
+        city_code: { type: string }
+        district_code: { type: string, nullable: true }
+        height_cm: { type: integer, nullable: true }
+        education_level: { type: integer }
+        occupation_category: { type: integer }
+        employment_status: { type: integer }
+        annual_income_band: { type: integer }
+        family_asset_band: { type: integer, nullable: true }
+        debt_band: { type: integer }
+        house_status: { type: integer }
+        vehicle_status: { type: integer }
+        marital_status: { type: integer }
+        children_count: { type: integer }
+        wants_children: { type: integer }
+        marriage_intent: { type: integer }
+        marriage_timeline: { type: integer }
+        smoking_status: { type: integer }
+        drinking_status: { type: integer }
+        bio: { type: string }
+        profile_completion: { type: integer }
+        updated_at: { type: string, format: date-time }
+    ProfileInput:
+      type: object
+      required: [nickname, gender, city_code]
+      properties:
+        nickname: { type: string, maxLength: 32 }
+        gender: { type: integer, minimum: 1, maximum: 3 }
+        birth_date: { type: string, nullable: true }
+        province_code: { type: string }
+        city_code: { type: string }
+        district_code: { type: string, nullable: true }
+        height_cm: { type: integer, nullable: true }
+        education_level: { type: integer }
+        occupation_category: { type: integer }
+        employment_status: { type: integer }
+        annual_income_band: { type: integer }
+        family_asset_band: { type: integer, nullable: true }
+        debt_band: { type: integer }
+        house_status: { type: integer }
+        vehicle_status: { type: integer }
+        marital_status: { type: integer }
+        children_count: { type: integer }
+        wants_children: { type: integer }
+        marriage_intent: { type: integer }
+        marriage_timeline: { type: integer }
+        smoking_status: { type: integer }
+        drinking_status: { type: integer }
+        bio: { type: string, maxLength: 500 }
+    Preferences:
+      type: object
+      properties:
+        target_genders: { type: array, items: { type: integer } }
+        min_age: { type: integer }
+        max_age: { type: integer }
+        age_hard: { type: boolean }
+        min_height_cm: { type: integer }
+        max_height_cm: { type: integer }
+        height_hard: { type: boolean }
+        allowed_city_codes: { type: array, items: { type: string } }
+        city_hard: { type: boolean }
+        min_education_level: { type: integer }
+        education_hard: { type: boolean }
+        min_income_band: { type: integer }
+        income_hard: { type: boolean }
+        allowed_marital_statuses: { type: array, items: { type: integer } }
+        marital_status_hard: { type: boolean }
+        allowed_children_states: { type: array, items: { type: integer } }
+        children_hard: { type: boolean }
+        allowed_wants_children: { type: array, items: { type: integer } }
+        wants_children_hard: { type: boolean }
+        allowed_smoking_statuses: { type: array, items: { type: integer } }
+        smoking_hard: { type: boolean }
+        allowed_drinking_statuses: { type: array, items: { type: integer } }
+        drinking_hard: { type: boolean }
+        min_marriage_intent: { type: integer }
+        marriage_intent_hard: { type: boolean }
+        weights:
+          type: object
+          additionalProperties: { type: number }
+    PreferencesInput:
+      $ref: '#/components/schemas/Preferences'
+    Photo:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string }
+        sort_order: { type: integer }
+        is_primary: { type: boolean }
+        moderation_status: { type: integer }
+    CalculatorRequest:
+      type: object
+      required: [conditions]
+      properties:
+        anonymous_session_id: { type: string }
+        self:
+          type: object
+          properties:
+            gender: { type: integer }
+            age: { type: integer }
+            city_code: { type: string }
+            height_cm: { type: integer, nullable: true }
+            education_level: { type: integer }
+            annual_income_band: { type: integer }
+        conditions:
+          type: object
+          properties:
+            target_genders: { type: array, items: { type: integer } }
+            min_age: { type: integer, nullable: true }
+            max_age: { type: integer, nullable: true }
+            allowed_city_codes: { type: array, items: { type: string } }
+            min_height_cm: { type: integer, nullable: true }
+            max_height_cm: { type: integer, nullable: true }
+            min_education_level: { type: integer, nullable: true }
+            min_income_band: { type: integer, nullable: true }
+            allowed_marital_statuses: { type: array, items: { type: integer } }
+            allowed_children_states: { type: array, items: { type: integer } }
+            allowed_wants_children: { type: array, items: { type: integer } }
+    CalculatorResult:
+      type: object
+      properties:
+        run_id: { type: string, format: uuid }
+        dataset:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            version: { type: string }
+            source_name: { type: string }
+            is_demo: { type: boolean }
+            disclaimer: { type: string }
+        total_population: { type: number }
+        matched_count: { type: number }
+        matched_ratio: { type: number }
+        funnel:
+          type: object
+          properties:
+            total_population: { type: number }
+            final_count: { type: number }
+            final_ratio: { type: number }
+            steps:
+              type: array
+              items: { $ref: '#/components/schemas/FunnelStep' }
+        sensitivity:
+          type: array
+          items: { $ref: '#/components/schemas/SensitivityItem' }
+        top_factors:
+          type: array
+          items: { $ref: '#/components/schemas/SensitivityItem' }
+        funnel_note: { type: string }
+        share_token: { type: string, nullable: true }
+        generated_at: { type: string, format: date-time }
+    FunnelStep:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        count: { type: number }
+        ratio: { type: number }
+        drop_ratio: { type: number }
+        applied: { type: boolean }
+    SensitivityItem:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        base_count: { type: number }
+        without_count: { type: number }
+        delta_ratio: { type: number }
+        added_count: { type: number }
+    FunnelResult:
+      type: object
+      properties:
+        steps:
+          type: array
+          items: { $ref: '#/components/schemas/FunnelStep' }
+        total: { type: number }
+        final_count: { type: number }
+        final_ratio: { type: number }
+        reciprocal_count: { type: number }
+        reciprocal_ratio: { type: number }
+        note: { type: string }
+    SensitivityResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/SensitivityItem' }
+        note: { type: string }
+    DiscoverySummary:
+      type: object
+      properties:
+        in_market: { type: boolean }
+        eligible_count_text: { type: string, description: 小于 K 匿名阈值时为 "<10" }
+        eligible_count: { type: integer }
+        one_way_count: { type: integer }
+        reciprocal_count: { type: integer }
+        early_stage: { type: boolean }
+        early_stage_message: { type: string }
+        profile_completion: { type: integer }
+        requirements:
+          type: object
+          properties:
+            min_profile_completion: { type: integer }
+            age_ok: { type: boolean }
+            consent_ok: { type: boolean }
+            account_ok: { type: boolean }
+    CandidateCard:
+      type: object
+      properties:
+        user_id: { type: string, format: uuid }
+        nickname: { type: string }
+        age: { type: integer }
+        city_code: { type: string }
+        city_name: { type: string }
+        height_cm: { type: integer, nullable: true }
+        education_level: { type: integer }
+        occupation_category: { type: integer }
+        marital_status: { type: integer }
+        wants_children: { type: integer }
+        primary_photo_url: { type: string, nullable: true }
+        bio: { type: string }
+        preference_score: { type: number }
+        compatibility_score: { type: number }
+        overall_score: { type: number }
+        compatibility_insufficient: { type: boolean }
+        my_action: { type: integer, nullable: true }
+    CandidatePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/CandidateCard' }
+        next_cursor: { type: string }
+        has_more: { type: boolean }
+    CandidateDetail:
+      allOf:
+        - $ref: '#/components/schemas/CandidateCard'
+        - type: object
+          properties:
+            reasons:
+              type: array
+              items: { type: string }
+            conflicts:
+              type: array
+              items: { type: string }
+            dimensions:
+              type: array
+              items:
+                type: object
+                properties:
+                  name: { type: string }
+                  score: { type: number }
+            disclaimer: { type: string }
+    MatchPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/MatchSummary' }
+        next_cursor: { type: string }
+        has_more: { type: boolean }
+    MatchSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        peer_user_id: { type: string, format: uuid }
+        peer_nickname: { type: string }
+        peer_age: { type: integer }
+        peer_city_name: { type: string }
+        peer_photo_url: { type: string, nullable: true }
+        matched_at: { type: string, format: date-time }
+        status: { type: integer }
+        confirmed_meeting: { type: boolean }
+    MatchDetail:
+      allOf:
+        - $ref: '#/components/schemas/MatchSummary'
+        - type: object
+          properties:
+            my_outcomes: { type: array, items: { type: integer } }
+            peer_outcomes: { type: array, items: { type: integer } }
+            chat_enabled: { type: boolean }
+    Report:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        reporter_user_id: { type: string, format: uuid }
+        reported_user_id: { type: string, format: uuid }
+        reported_nickname: { type: string }
+        reason: { type: integer }
+        description: { type: string }
+        status: { type: integer }
+        created_at: { type: string, format: date-time }
+    BaselineDataset:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        version: { type: string }
+        source_name: { type: string }
+        source_url: { type: string }
+        source_year: { type: integer, nullable: true }
+        description: { type: string }
+        methodology: { type: string }
+        disclaimer: { type: string }
+        status: { type: integer }
+        active: { type: boolean }
+        is_demo: { type: boolean }
+        record_count: { type: integer }
+        created_at: { type: string, format: date-time }
+    BaselineDatasetInput:
+      type: object
+      required: [name, version]
+      properties:
+        name: { type: string }
+        version: { type: string }
+        source_name: { type: string }
+        source_url: { type: string }
+        source_year: { type: integer, nullable: true }
+        description: { type: string }
+        methodology: { type: string }
+        disclaimer: { type: string }
+        is_demo: { type: boolean, description: 生产环境禁止激活演示数据 }
+    ImportReport:
+      type: object
+      properties:
+        total_rows: { type: integer }
+        valid_rows: { type: integer }
+        invalid_rows: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+        imported: { type: boolean }
+        preview:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    AdminDashboard:
+      type: object
+      properties:
+        total_users: { type: integer }
+        new_users_7d: { type: integer }
+        dau: { type: integer }
+        wau: { type: integer }
+        mau: { type: integer }
+        profile_completed_users: { type: integer }
+        market_users: { type: integer }
+        gender_distribution:
+          type: object
+          additionalProperties: { type: integer }
+        city_distribution:
+          type: array
+          items:
+            type: object
+            properties:
+              city_name: { type: string }
+              count: { type: integer }
+        age_distribution:
+          type: array
+          items:
+            type: object
+            properties:
+              bucket: { type: string }
+              count: { type: integer }
+        interactions_like: { type: integer }
+        matches_total: { type: integer }
+        match_rate: { type: number }
+        offline_meeting_reports: { type: integer }
+        confirmed_meetings: { type: integer }
+        relationship_reports: { type: integer }
+        north_star: { type: number, description: 每 1000 MAU 的双方确认线下见面数 }
+        funnel:
+          type: array
+          items:
+            type: object
+            properties:
+              key: { type: string }
+              label: { type: string }
+              count: { type: integer }
+              conversion: { type: number }
+    AdminUserPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              nickname: { type: string }
+              phone_masked: { type: string }
+              status: { type: integer }
+              role: { type: integer }
+              discovery_enabled: { type: boolean }
+              profile_completion: { type: integer }
+              is_seed: { type: boolean }
+              created_at: { type: string, format: date-time }
+        total: { type: integer }
+        page: { type: integer }
+        page_size: { type: integer }
+    SettingsBundle:
+      type: object
+      properties:
+        features:
+          type: object
+          additionalProperties: { type: boolean }
+        settings:
+          type: object
+          additionalProperties: true
+    AuditLog:
+      type: object
+      properties:
+        id: { type: integer }
+        actor_user_id: { type: string, nullable: true }
+        action: { type: string }
+        target_type: { type: string }
+        target_id: { type: string }
+        detail: {}
+        created_at: { type: string, format: date-time }

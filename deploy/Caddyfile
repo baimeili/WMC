@@ -1,0 +1,28 @@
+# 反向代理：/api 转发到后端，/admin 提供运营后台静态文件，/ 提供 H5 构建产物
+:80 {
+	encode gzip
+
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	handle /health/* {
+		reverse_proxy backend:8080
+	}
+
+	handle /metrics {
+		reverse_proxy backend:8080
+	}
+
+	handle /admin/* {
+		root * /srv/static/admin
+		try_files {path} /index.html
+		file_server
+	}
+
+	handle {
+		root * /srv/static/h5
+		try_files {path} /index.html
+		file_server
+	}
+}

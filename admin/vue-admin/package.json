@@ -1,0 +1,27 @@
+{
+  "name": "wmc-admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "婚恋市场计算器运营后台",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "build:fast": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.21.0",
+    "echarts": "^5.6.0",
+    "element-plus": "^2.14.7",
+    "pinia": "^2.3.1",
+    "vue": "^3.5.44",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "6.0.10",
+    "sass": "1.79.6",
+    "typescript": "5.9.3",
+    "vite": "7.3.7",
+    "vue-tsc": "2.2.12"
+  }
+}
