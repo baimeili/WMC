@@ -316,9 +316,18 @@ func (s *Service) Block(ctx context.Context, userID, targetID uuid.UUID) error {
 	if userID == targetID {
 		return apperr.Invalid("不能屏蔽自己")
 	}
-	if err := s.store.Q.UpsertBlock(ctx, sqlcdb.UpsertBlockParams{
-		BlockerUserID: userID, BlockedUserID: targetID,
-	}); err != nil {
+	err := s.store.InTx(ctx, func(tx *store.Store) error {
+		if err := tx.Q.UpsertBlock(ctx, sqlcdb.UpsertBlockParams{
+			BlockerUserID: userID, BlockedUserID: targetID,
+		}); err != nil {
+			return err
+		}
+		// 屏蔽后已有 Match 置为「已屏蔽」，双方不再看到彼此
+		return tx.Q.BlockMatchesBetween(ctx, sqlcdb.BlockMatchesBetweenParams{
+			Column1: userID, Column2: targetID,
+		})
+	})
+	if err != nil {
 		return apperr.ErrInternal.Wrap(err)
 	}
 	return nil

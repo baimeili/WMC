@@ -43,6 +43,11 @@ FROM matches m
 JOIN users u ON u.id = CASE WHEN m.user_a_id = $1 THEN m.user_b_id ELSE m.user_a_id END
 LEFT JOIN user_profiles p ON p.user_id = u.id
 WHERE (m.user_a_id = $1 OR m.user_b_id = $1) AND m.status = 1
+  AND NOT EXISTS (
+      SELECT 1 FROM user_blocks b
+      WHERE (b.blocker_user_id = m.user_a_id AND b.blocked_user_id = m.user_b_id)
+         OR (b.blocker_user_id = m.user_b_id AND b.blocked_user_id = m.user_a_id)
+  )
 ORDER BY m.matched_at DESC
 LIMIT $2 OFFSET $3;
 
@@ -104,3 +109,6 @@ LIMIT $1 OFFSET $2;
 
 -- name: AdminListUserReports :many
 SELECT * FROM user_reports WHERE reported_user_id = $1 ORDER BY created_at DESC LIMIT 20;
+-- name: BlockMatchesBetween :exec
+UPDATE matches SET status = 3, ended_at = now()
+WHERE (user_a_id = LEAST($1::uuid, $2::uuid) AND user_b_id = GREATEST($1::uuid, $2::uuid)) AND status = 1;

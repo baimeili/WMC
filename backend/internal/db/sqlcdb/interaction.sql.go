@@ -186,6 +186,21 @@ func (q *Queries) AdminResolveReport(ctx context.Context, arg AdminResolveReport
 	return err
 }
 
+const blockMatchesBetween = `-- name: BlockMatchesBetween :exec
+UPDATE matches SET status = 3, ended_at = now()
+WHERE (user_a_id = LEAST($1::uuid, $2::uuid) AND user_b_id = GREATEST($1::uuid, $2::uuid)) AND status = 1
+`
+
+type BlockMatchesBetweenParams struct {
+	Column1 uuid.UUID `json:"column_1"`
+	Column2 uuid.UUID `json:"column_2"`
+}
+
+func (q *Queries) BlockMatchesBetween(ctx context.Context, arg BlockMatchesBetweenParams) error {
+	_, err := q.db.Exec(ctx, blockMatchesBetween, arg.Column1, arg.Column2)
+	return err
+}
+
 const cancelMatch = `-- name: CancelMatch :exec
 UPDATE matches SET status = 2, ended_at = now() WHERE id = $1
 `
@@ -409,6 +424,11 @@ FROM matches m
 JOIN users u ON u.id = CASE WHEN m.user_a_id = $1 THEN m.user_b_id ELSE m.user_a_id END
 LEFT JOIN user_profiles p ON p.user_id = u.id
 WHERE (m.user_a_id = $1 OR m.user_b_id = $1) AND m.status = 1
+  AND NOT EXISTS (
+      SELECT 1 FROM user_blocks b
+      WHERE (b.blocker_user_id = m.user_a_id AND b.blocked_user_id = m.user_b_id)
+         OR (b.blocker_user_id = m.user_b_id AND b.blocked_user_id = m.user_a_id)
+  )
 ORDER BY m.matched_at DESC
 LIMIT $2 OFFSET $3
 `

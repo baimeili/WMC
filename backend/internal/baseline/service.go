@@ -354,6 +354,15 @@ func (s *Service) CreateDemoDataset(ctx context.Context, count int, createdBy *u
 	if !s.settings.Bool(ctx, settings.KeyDemoDatasetEnabled, true) {
 		return Dataset{}, apperr.ErrFeatureDisabled.WithMessage("演示数据集功能已关闭")
 	}
+	// 幂等：若已存在同名演示数据集且已有记录，直接复用，避免重复生成
+	existing, err := s.store.Q.ListDatasets(ctx)
+	if err == nil {
+		for _, d := range existing {
+			if d.Name == seed.DemoDatasetName && d.RecordCount > 0 {
+				return toDataset(d), nil
+			}
+		}
+	}
 	ds, err := s.Create(ctx, CreateInput{
 		Name: seed.DemoDatasetName, Version: "demo-1",
 		SourceName: "虚构演示数据", SourceURL: "", SourceYear: nil,

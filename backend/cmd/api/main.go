@@ -248,6 +248,7 @@ func buildRouter(
 		api.Group(func(adm chi.Router) {
 			adm.Use(auth.Middleware(tokens, authSvc))
 			adm.Use(auth.RequireRole(2))
+			adm.Use(limiter.Middleware("admin", 300, time.Minute))
 			svc.baseline.Register(adm)
 			svc.meta.RegisterAdmin(adm)
 			svc.admin.Register(adm)

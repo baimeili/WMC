@@ -120,7 +120,7 @@ LIMIT 200`, cutoff)
 UPDATE users
 SET status = 4, deleted_at = now(), discovery_enabled = FALSE,
     phone_encrypted = ''::bytea,
-    phone_hash = digest(uuid_send(id), 'sha256')
+    phone_hash = decode(md5(id::text), 'hex')
 WHERE id = $1`, id); err != nil {
 			logger.Error("匿名化账号失败", "user_id", id, "error", err)
 		}

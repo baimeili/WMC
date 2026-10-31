@@ -654,6 +654,7 @@ type CandidateCard struct {
 	Reasons                   []string                   `json:"reasons,omitempty"`
 	Conflicts                 []string                   `json:"conflicts,omitempty"`
 	Dimensions                []matching.DimensionScore `json:"dimensions,omitempty"`
+	Disclaimer                string                     `json:"disclaimer,omitempty"`
 }
 
 // CandidatePage 分页结果。
@@ -838,7 +839,7 @@ func (s *Service) CandidateDetail(ctx context.Context, userID, candidateID uuid.
 		MaritalStatus: r.MaritalStatus, WantsChildren: r.WantsChildren, Bio: r.Bio,
 		PreferenceScore: res.PreferenceScore, CompatibilityScore: res.CompatibilityScore,
 		OverallScore: res.OverallScore, CompatibilityInsufficient: res.Insufficient,
-		Reasons: res.Reasons, Dimensions: res.CategoryScores,
+		Reasons: res.Reasons, Dimensions: res.CategoryScores, Disclaimer: matching.Disclaimer,
 	}
 	for _, c := range res.Conflicts {
 		card.Conflicts = append(card.Conflicts, c.Label+"："+c.Detail)
