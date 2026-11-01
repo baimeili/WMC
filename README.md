@@ -9,6 +9,9 @@
 
 两个市场严格区分：理论市场只给估算比例，绝不输出精确人数或「双向匹配率」；真实市场只统计已注册、主动入池、账户正常的用户。
 
+> **新加入的开发者 / AI Agent**：请先读 [INDEX.md](INDEX.md)（目录地图、模块职责、请求链路、调试手册、修改指南、Agent 约定）。
+> **闭环状态**：核心业务闭环已在开发环境验证（46/46 端到端冒烟通过），详见 [docs/09-闭环检查报告.md](docs/09-闭环检查报告.md)。
+
 ## 快速开始（一键启动，先看效果）
 
 ```powershell
@@ -233,6 +236,9 @@ uni-app 原生打包需要原生工具链，本机未安装，未验证：
 powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/test-all.ps1 `
   -TestDatabaseUrl "postgres://wmc:wmc_local_password@localhost:55432/wmc?sslmode=disable"
 
+# 端到端冒烟（真实 HTTP + 真实数据库，覆盖 46 项业务闭环）
+node scripts/smoke.mjs
+
 # 仅后端
 cd backend
 go build ./...
@@ -241,6 +247,8 @@ go test -count=1 ./...
 $env:TEST_DATABASE_URL="postgres://wmc:wmc_local_password@localhost:55432/wmc?sslmode=disable"
 go test -tags=integration -count=1 ./...
 ```
+
+端到端冒烟脚本 `scripts/smoke.mjs` 覆盖：游客计算与分享 → 短信注册 → 资料/偏好/价值观 → 照片上传与后台审核 → 入池 → 双向候选池 → Like/Match（唯一性）→ 双方反馈确认见面 → Block/举报 → 后台看板与审计，当前 46/46 通过。
 
 集成测试使用真实 PostgreSQL（每个测试创建独立数据库，不伪造 SQLite），覆盖：SQL 加权计数与内存实现一致性、漏斗单调、敏感性不减少、分享往返、双向硬筛、Block 隐藏、K 匿名 <10 等。实测结果（全部通过）见 [07-阶段验收记录](docs/07-阶段验收记录.md)。
 
@@ -309,14 +317,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./deploy/scripts/restore.ps1
 
 1. `CandidateDetail` 未返回 OpenAPI 定义的 `disclaimer` 字段；
 2. worker 注销清理 SQL 依赖 `pgcrypto.digest`，但迁移未创建该扩展（保留期清理暂不可用）；
-3. Block 后已存在的 Match 未同步为「已屏蔽」，Match 列表未按 Block 过滤；
+3. ~~Block 后已存在的 Match 未同步为「已屏蔽」~~（已修复：Block 事务内将 Match 置为已屏蔽，列表按 Block 过滤）；
 4. 候选列表仅在 `scanLimit=500` 内计算软分并内存排序（规模化优化待做）；
-5. Seed 每次运行会新建 DEMO 数据集（不幂等）；
-6. 管理接口无限流；生产建议网关层补充；
+5. ~~Seed 每次运行会新建 DEMO 数据集~~（已修复：同名且已有记录时复用）；
+6. ~~管理接口无限流~~（已修复：后台路由 300 次/分钟/IP；生产仍建议网关兜底）；
 7. docker compose、Android/iOS、真实 Redis/S3/短信、备份恢复、10 万级 EXPLAIN ANALYZE 与 P95 压测均待验证。
 
 ## 15. 文档索引
 
+- [INDEX.md](INDEX.md) 项目索引（新开发者 / Agent 入口）
 - [00-需求范围](docs/00-需求范围.md)
 - [01-架构设计](docs/01-架构设计.md)
 - [02-数据库设计](docs/02-数据库设计.md)
@@ -325,3 +334,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./deploy/scripts/restore.ps1
 - [05-部署运维](docs/05-部署运维.md)
 - [06-工具链与依赖安装记录](docs/06-工具链与依赖安装记录.md)
 - [07-阶段验收记录](docs/07-阶段验收记录.md)
+- [08-H5界面设计说明](docs/08-H5界面设计说明.md)
+- [09-闭环检查报告](docs/09-闭环检查报告.md)
