@@ -180,6 +180,10 @@ if (-not $SkipDb) {
         Write-Host '[启动] 本地 PostgreSQL ...' -ForegroundColor Green
         Start-Component -Name 'db' -FilePath $exe -Arguments @('-port', [string]$DbPort, '-data', $DbDataDir) -WorkingDirectory $Backend | Out-Null
         if (-not (Wait-Port -Port $DbPort -TimeoutSeconds 120)) {
+            Write-Host ''
+            Write-Host '数据库启动失败，最近日志：' -ForegroundColor Red
+            Get-Content (Join-Path $LogDir 'db.log') -Tail 20 -ErrorAction SilentlyContinue
+            Get-Content (Join-Path $LogDir 'db.err.log') -Tail 20 -ErrorAction SilentlyContinue
             throw ('数据库启动超时，请查看日志：' + (Join-Path $LogDir 'db.log'))
         }
         Write-Host ('[就绪] 数据库 127.0.0.1:' + $DbPort) -ForegroundColor Green
@@ -197,8 +201,15 @@ if (-not $SkipApi) {
         $exe = Join-Path $BinDir 'wmc-api.exe'
         if (-not (Test-Path $exe)) { throw '找不到 wmc-api.exe，请去掉 -SkipBuild 重新运行' }
         Write-Host '[启动] 后端 API ...' -ForegroundColor Green
-        Start-Component -Name 'api' -FilePath $exe -Arguments @() -WorkingDirectory $Backend | Out-Null
-        if (-not (Wait-Http -Url ('http://127.0.0.1:' + $ApiPort + '/health/ready') -TimeoutSeconds 90)) {
+        $apiProc = Start-Component -Name 'api' -FilePath $exe -Arguments @() -WorkingDirectory $Backend
+        if (-not (Wait-Http -Url ('http://127.0.0.1:' + $ApiPort + '/health/ready') -TimeoutSeconds 120)) {
+            Write-Host ''
+            Write-Host '后端 API 启动失败，最近日志：' -ForegroundColor Red
+            Get-Content (Join-Path $LogDir 'api.log') -Tail 20 -ErrorAction SilentlyContinue
+            Get-Content (Join-Path $LogDir 'api.err.log') -Tail 20 -ErrorAction SilentlyContinue
+            if ($apiProc -and $apiProc.HasExited) {
+                Write-Host ('API 进程已退出，退出码：' + $apiProc.ExitCode) -ForegroundColor Red
+            }
             throw ('后端 API 启动超时，请查看日志：' + (Join-Path $LogDir 'api.log'))
         }
         Write-Host ('[就绪] API http://127.0.0.1:' + $ApiPort) -ForegroundColor Green
