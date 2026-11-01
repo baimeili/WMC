@@ -1,17 +1,67 @@
-/* 全局设计变量：理性、干净、数据化、中性 */
-$uni-color-primary: #2f6bff;
-$uni-color-success: #17a673;
-$uni-color-warning: #e6a23c;
-$uni-color-error: #e34d59;
-$uni-text-color: #1f2329;
-$uni-text-color-grey: #6b7280;
-$uni-text-color-placeholder: #9aa3af;
-$uni-bg-color: #f5f6f8;
+/* ============================================================
+ * 设计令牌（Design Tokens）
+ * 风格：理性 / 干净 / 数据化 / 中性
+ * 用法：组件内直接使用 $uni-* / $wmc-* 变量（uni-app 会自动注入本文件）
+ * ============================================================ */
+
+/* ---------- 主色 ---------- */
+$uni-color-primary: #3355ff;          // 主色：电光靛蓝
+$uni-color-primary-deep: #1f37c8;     // 主色深：按钮渐变/按压
+$uni-color-primary-soft: rgba(51, 85, 255, 0.08);
+$uni-color-success: #12b886;
+$uni-color-warning: #f59e0b;
+$uni-color-error: #ef4444;
+
+/* ---------- 中性色 ---------- */
+$uni-text-color: #0b1220;             // 标题/主文本
+$uni-text-color-strong: #1e293b;
+$uni-text-color-body: #334155;
+$uni-text-color-grey: #64748b;
+$uni-text-color-placeholder: #94a3b8;
+$uni-border-color: rgba(15, 23, 42, 0.08);
+$uni-border-color-strong: rgba(15, 23, 42, 0.14);
+$uni-bg-color: #f4f6fb;               // 页面底色
 $uni-bg-color-card: #ffffff;
-$uni-border-color: #e5e7eb;
-$uni-border-radius: 12rpx;
-$uni-font-size-lg: 34rpx;
+$uni-bg-color-sunken: #f8fafc;
+
+/* ---------- 市场语义色 ---------- */
+$wmc-color-theory: #f59e0b;           // 理论市场估算（琥珀）
+$wmc-color-theory-soft: rgba(245, 158, 11, 0.1);
+$wmc-color-real: #0ea5a5;             // 本站真实用户池（青）
+$wmc-color-real-soft: rgba(14, 165, 165, 0.1);
+$wmc-color-accent: $wmc-color-theory;
+
+/* ---------- 圆角 ---------- */
+$uni-border-radius: 20rpx;
+$wmc-radius-sm: 14rpx;
+$wmc-radius-card: 28rpx;
+$wmc-radius-lg: 36rpx;
+$wmc-radius-pill: 999rpx;
+
+/* ---------- 间距节奏（4 的倍数） ---------- */
+$wmc-space-1: 8rpx;
+$wmc-space-2: 16rpx;
+$wmc-space-3: 24rpx;
+$wmc-space-4: 32rpx;
+$wmc-space-5: 40rpx;
+$wmc-space-6: 56rpx;
+
+/* ---------- 字号 ---------- */
+$uni-font-size-lg: 36rpx;
 $uni-font-size-base: 30rpx;
 $uni-font-size-sm: 26rpx;
-$wmc-color-accent: #f59e0b;
-$wmc-shadow: 0 6rpx 24rpx rgba(15, 23, 42, 0.06);
+$wmc-font-display: 56rpx;
+$wmc-font-h1: 44rpx;
+$wmc-font-h2: 34rpx;
+$wmc-font-h3: 30rpx;
+$wmc-font-caption: 24rpx;
+$wmc-font-micro: 22rpx;
+
+/* ---------- 阴影 ---------- */
+$wmc-shadow: 0 12rpx 40rpx rgba(15, 23, 42, 0.08), 0 2rpx 8rpx rgba(15, 23, 42, 0.04);
+$wmc-shadow-sm: 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
+$wmc-shadow-primary: 0 16rpx 32rpx rgba(51, 85, 255, 0.28);
+
+/* ---------- 渐变 ---------- */
+$wmc-gradient-primary: linear-gradient(135deg, #3355ff 0%, #5a7bff 100%);
+$wmc-gradient-hero: linear-gradient(140deg, #101a3f 0%, #23328c 45%, #3b57e0 100%);

@@ -14,7 +14,7 @@
         <button class="wmc-btn wmc-btn--ghost wmc-btn--block retry-btn" @tap="load">重新加载</button>
       </view>
       <template v-else-if="sensitivity">
-        <SensitivityList :items="sensitivity.items" market="real" title="真实候选池条件敏感性（Leave-One-Out）" />
+        <SensitivityList :items="sensitivity.items" market="real" title="条件敏感性分析" />
         <view class="wmc-card wmc-card--flat">
           <text class="wmc-hint">
             为保护隐私，少于 {{ kThreshold }} 人的样本统一显示为 &lt;{{ kThreshold }}，并隐藏变化率。取消某个条件后人数反而下降，说明该条件同时在限制对方对你的选择。

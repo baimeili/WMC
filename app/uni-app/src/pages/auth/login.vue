@@ -1,67 +1,71 @@
 <template>
   <PageShell>
-    <view class="wmc-container">
-      <view class="login-head">
-        <text class="login-head__title">手机号登录 / 注册</text>
-        <text class="login-head__desc">
-          首次登录会自动创建账号。登录后可完善资料，查看本站真实双向候选人。
-        </text>
+    <view class="wmc-container login">
+      <view class="login__brand">
+        <view class="login__logo">W</view>
+        <text class="login__title">手机号登录 / 注册</text>
+        <text class="login__subtitle">首次登录自动创建账号，之后可完善资料并加入真实婚恋市场</text>
       </view>
 
-      <view class="wmc-card">
+      <view class="wmc-card login__card">
         <view class="wmc-field">
           <text class="wmc-field-label">手机号</text>
-          <input
-            class="wmc-input"
-            type="number"
-            maxlength="11"
-            placeholder="请输入中国大陆手机号"
-            :value="phone"
-            @input="onPhoneInput"
-          />
+          <view class="login__input-wrap">
+            <text class="login__prefix">+86</text>
+            <input
+              class="login__input"
+              type="number"
+              maxlength="11"
+              placeholder="请输入中国大陆手机号"
+              :value="phone"
+              @input="onPhoneInput"
+            />
+          </view>
         </view>
 
         <view class="wmc-field">
           <text class="wmc-field-label">验证码</text>
-          <view class="code-row">
-            <input
-              class="wmc-input code-input"
-              type="number"
-              maxlength="6"
-              placeholder="6 位数字验证码"
-              :value="code"
-              @input="onCodeInput"
-            />
-            <button class="wmc-btn wmc-btn--soft code-btn" :class="{ 'wmc-btn--disabled': counting }" @tap="sendCode">
-              {{ counting ? countdown + 's 后重发' : '获取验证码' }}
+          <view class="login__code-row">
+            <view class="login__input-wrap login__input-wrap--code">
+              <input
+                class="login__input"
+                type="number"
+                maxlength="6"
+                placeholder="6 位数字验证码"
+                :value="code"
+                @input="onCodeInput"
+              />
+            </view>
+            <button class="login__code-btn" :class="{ 'login__code-btn--disabled': counting }" @tap="sendCode">
+              {{ counting ? countdown + 's' : '获取验证码' }}
             </button>
           </view>
         </view>
 
-        <view v-if="isDev" class="wmc-notice wmc-notice--warning">
-          开发环境验证码固定为 123456，生产环境会通过短信下发。
+        <view v-if="isDev" class="wmc-notice login__dev">
+          <text>开发环境验证码固定为 123456，生产环境会通过短信下发。</text>
         </view>
 
         <view class="consent" @tap="toggleConsent">
           <view class="consent__box" :class="{ 'consent__box--checked': agreed }">
-            <view v-if="agreed" class="consent__dot"></view>
+            <view v-if="agreed" class="consent__tick"></view>
           </view>
           <text class="consent__text">
             我已阅读并同意
-            <text class="wmc-link" @tap.stop="goPrivacy">《用户协议与隐私政策》</text>
+            <text class="consent__link" @tap.stop="goPrivacy">《用户协议与隐私政策》</text>
             ，并理解匹配结果仅根据双方填写条件计算，不代表婚姻成功概率。
           </text>
         </view>
 
-        <text v-if="errorText" class="wmc-error">{{ errorText }}</text>
+        <text v-if="errorText" class="wmc-error login__error">{{ errorText }}</text>
 
-        <button class="wmc-btn wmc-btn--primary wmc-btn--block login-btn" :disabled="submitting" @tap="submit">
+        <button class="wmc-btn wmc-btn--primary wmc-btn--block login__submit" :disabled="submitting" @tap="submit">
           {{ submitting ? '登录中…' : '登录 / 注册' }}
         </button>
       </view>
 
-      <view class="login-foot">
-        <text class="wmc-hint">登录代表你已年满 18 岁。手机号仅用于登录，不会在个人主页公开展示。</text>
+      <view class="login__foot">
+        <text>登录代表你已年满 18 岁。手机号仅用于登录，不会在个人主页公开展示。</text>
       </view>
     </view>
   </PageShell>
@@ -189,73 +193,159 @@ async function submit() {
 </script>
 
 <style lang="scss" scoped>
-.login-head {
-  padding: 24rpx 8rpx 28rpx;
+.login {
+  padding-top: 40rpx;
 }
-.login-head__title {
-  display: block;
-  font-size: 40rpx;
-  font-weight: 600;
-  color: $uni-text-color;
-}
-.login-head__desc {
-  display: block;
-  margin-top: 12rpx;
-  font-size: 26rpx;
-  line-height: 1.8;
-  color: $uni-text-color-grey;
-}
-.code-row {
+.login__brand {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24rpx 0 40rpx;
+}
+.login__logo {
+  width: 108rpx;
+  height: 108rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(145deg, #101a3f 0%, #3355ff 100%);
+  color: #ffffff;
+  font-size: 48rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 18rpx 36rpx rgba(35, 50, 140, 0.32);
+}
+.login__title {
+  margin-top: 26rpx;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #0b1220;
+  letter-spacing: -0.5rpx;
+}
+.login__subtitle {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #64748b;
+  text-align: center;
+  line-height: 1.7;
+  padding: 0 48rpx;
+}
+.login__card {
+  padding: 40rpx 32rpx 36rpx;
+}
+.login__input-wrap {
+  display: flex;
+  align-items: center;
+  height: 96rpx;
+  border: 1rpx solid rgba(15, 23, 42, 0.14);
+  border-radius: 20rpx;
+  background: #ffffff;
+  padding: 0 26rpx;
+  box-sizing: border-box;
+}
+.login__input-wrap:focus-within {
+  border-color: rgba(51, 85, 255, 0.55);
+  box-shadow: 0 0 0 6rpx rgba(51, 85, 255, 0.1);
+}
+.login__prefix {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #334155;
+  padding-right: 18rpx;
+  margin-right: 18rpx;
+  border-right: 1rpx solid rgba(15, 23, 42, 0.1);
+}
+.login__input {
+  flex: 1;
+  height: 100%;
+  font-size: 32rpx;
+  color: #0b1220;
+  letter-spacing: 1rpx;
+}
+.login__code-row {
+  display: flex;
+  align-items: center;
   gap: 16rpx;
 }
-.code-input {
+.login__input-wrap--code {
   flex: 1;
 }
-.code-btn {
-  width: 240rpx;
-  flex-shrink: 0;
+.login__code-btn {
+  width: 220rpx;
+  height: 96rpx;
+  border-radius: 20rpx;
+  background: rgba(51, 85, 255, 0.08);
+  color: #3355ff;
   font-size: 26rpx;
-  height: 84rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  margin: 0;
+  line-height: 1.2;
+}
+.login__code-btn::after {
+  border: none;
+}
+.login__code-btn--disabled {
+  color: #94a3b8;
+  background: #f1f5f9;
+}
+.login__dev {
+  margin-bottom: 24rpx;
 }
 .consent {
   display: flex;
   align-items: flex-start;
-  margin: 24rpx 0;
+  padding: 8rpx 0 4rpx;
 }
 .consent__box {
-  width: 36rpx;
-  height: 36rpx;
-  border-radius: 8rpx;
-  border: 1rpx solid $uni-border-color;
-  margin-right: 16rpx;
-  margin-top: 4rpx;
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 10rpx;
+  border: 2rpx solid #cbd5e1;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-right: 16rpx;
+  margin-top: 2rpx;
   flex-shrink: 0;
-  background: #ffffff;
+  transition: all 0.12s ease;
 }
 .consent__box--checked {
-  background: $uni-color-primary;
-  border-color: $uni-color-primary;
+  background: #3355ff;
+  border-color: #3355ff;
 }
-.consent__dot {
-  width: 16rpx;
-  height: 16rpx;
-  border-radius: 50%;
-  background: #ffffff;
+.consent__tick {
+  width: 14rpx;
+  height: 8rpx;
+  border-left: 3rpx solid #ffffff;
+  border-bottom: 3rpx solid #ffffff;
+  transform: rotate(-45deg) translateY(-2rpx);
 }
 .consent__text {
   flex: 1;
   font-size: 22rpx;
   line-height: 1.7;
-  color: $uni-text-color-grey;
+  color: #64748b;
 }
-.login-btn {
-  margin-top: 24rpx;
+.consent__link {
+  color: #3355ff;
+  font-weight: 500;
 }
-.login-foot {
-  padding: 8rpx 8rpx 40rpx;
+.login__error {
+  margin-top: 8rpx;
+}
+.login__submit {
+  margin-top: 28rpx;
+}
+.login__foot {
+  padding: 28rpx 48rpx 8rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #94a3b8;
+  line-height: 1.8;
 }
 </style>

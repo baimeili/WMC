@@ -651,9 +651,9 @@ type CandidateCard struct {
 	OverallScore              float64                    `json:"overall_score"`
 	CompatibilityInsufficient bool                       `json:"compatibility_insufficient"`
 	MyAction                  *int16                     `json:"my_action"`
-	Reasons                   []string                   `json:"reasons,omitempty"`
-	Conflicts                 []string                   `json:"conflicts,omitempty"`
-	Dimensions                []matching.DimensionScore `json:"dimensions,omitempty"`
+	Reasons                   []string                   `json:"reasons"`
+	Conflicts                 []string                   `json:"conflicts"`
+	Dimensions                []matching.DimensionScore `json:"dimensions"`
 	Disclaimer                string                     `json:"disclaimer,omitempty"`
 }
 

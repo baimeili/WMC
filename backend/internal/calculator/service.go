@@ -70,14 +70,16 @@ type EstimateRequest struct {
 }
 
 // EstimateResponse 估算响应。
+// 说明：内嵌 Estimate 使 total_population/matched_ratio/funnel/sensitivity 等字段平铺在顶层，
+// 与 OpenAPI 契约（CalculatorResult）及前端类型保持一致。
 type EstimateResponse struct {
-	RunID           uuid.UUID     `json:"run_id"`
-	AnonymousID     string        `json:"anonymous_session_id,omitempty"`
-	Dataset         DatasetInfo   `json:"dataset"`
-	Estimate        Estimate      `json:"estimate"`
-	ShareToken      *string       `json:"share_token"`
-	MarketNotice    string        `json:"market_notice"`
-	RegisterCTAText string        `json:"register_cta"`
+	RunID           uuid.UUID   `json:"run_id"`
+	AnonymousID     string      `json:"anonymous_session_id,omitempty"`
+	Dataset         DatasetInfo `json:"dataset"`
+	Estimate
+	ShareToken      *string `json:"share_token"`
+	MarketNotice    string  `json:"market_notice"`
+	RegisterCTAText string  `json:"register_cta"`
 }
 
 // MarketNotice 理论市场提示文案（禁止说成精确人数或双向匹配率）。

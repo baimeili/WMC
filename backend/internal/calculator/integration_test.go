@@ -105,11 +105,11 @@ func TestEstimate_SQLCounterMatchesInMemory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("内存估算失败: %v", err)
 	}
-	if math.Abs(memRes.TotalPopulation-res.Estimate.TotalPopulation) > 0.01 {
-		t.Fatalf("总权重不一致: SQL=%v 内存=%v", res.Estimate.TotalPopulation, memRes.TotalPopulation)
+	if math.Abs(memRes.TotalPopulation-res.TotalPopulation) > 0.01 {
+		t.Fatalf("总权重不一致: SQL=%v 内存=%v", res.TotalPopulation, memRes.TotalPopulation)
 	}
-	if math.Abs(memRes.MatchedCount-res.Estimate.MatchedCount) > 0.01 {
-		t.Fatalf("匹配权重不一致: SQL=%v 内存=%v", res.Estimate.MatchedCount, memRes.MatchedCount)
+	if math.Abs(memRes.MatchedCount-res.MatchedCount) > 0.01 {
+		t.Fatalf("匹配权重不一致: SQL=%v 内存=%v", res.MatchedCount, memRes.MatchedCount)
 	}
 	if res.RunID == uuid.Nil {
 		t.Fatal("应生成计算记录")
@@ -117,7 +117,7 @@ func TestEstimate_SQLCounterMatchesInMemory(t *testing.T) {
 	if res.Dataset.IsDemo {
 		t.Fatal("普通数据集不应标记为 DEMO")
 	}
-	if res.Estimate.FunnelNote == "" {
+	if res.FunnelNote == "" {
 		t.Fatal("必须返回漏斗说明")
 	}
 	if res.MarketNotice == "" {
@@ -145,14 +145,14 @@ func TestEstimate_FunnelAndSensitivityMonotonicInSQL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("估算失败: %v", err)
 	}
-	prev := res.Estimate.Funnel.TotalPopulation
-	for _, step := range res.Estimate.Funnel.Steps {
+	prev := res.Funnel.TotalPopulation
+	for _, step := range res.Funnel.Steps {
 		if step.Count > prev+0.01 {
 			t.Fatalf("漏斗第 %s 层候选数增加：%v > %v", step.Key, step.Count, prev)
 		}
 		prev = step.Count
 	}
-	for _, s := range res.Estimate.Sensitivity {
+	for _, s := range res.Sensitivity {
 		if s.WithoutCount < s.BaseCount-0.01 {
 			t.Fatalf("取消条件 %s 后候选数减少：%v < %v", s.Key, s.WithoutCount, s.BaseCount)
 		}
@@ -179,7 +179,7 @@ func TestEstimate_ShareRoundTripInDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("读取分享失败: %v", err)
 	}
-	if shared.Estimate.MatchedCount != res.Estimate.MatchedCount {
+	if shared.MatchedCount != res.MatchedCount {
 		t.Fatal("分享结果与原始结果不一致")
 	}
 	if _, err := svc.CreateShare(ctx, res.RunID, "other-session", nil); err == nil {
@@ -217,7 +217,7 @@ func TestEstimate_CacheHitReturnsSameResult(t *testing.T) {
 	if first.RunID == second.RunID {
 		t.Fatal("每次估算都应生成新的计算记录")
 	}
-	if first.Estimate.MatchedCount != second.Estimate.MatchedCount {
+	if first.MatchedCount != second.MatchedCount {
 		t.Fatal("缓存命中时结果应一致")
 	}
 }

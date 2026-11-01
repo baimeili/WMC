@@ -2,7 +2,7 @@
   <PageShell>
     <view class="wmc-container">
       <StepHeader
-        title="算算我的候选池"
+        :title="'第 ' + step + ' 步 · ' + stepLabels[step - 1]"
         subtitle="无需注册即可计算。理论市场结果基于基准人口数据集估算，不是本站真实用户数量。"
         :step="step"
         :steps="stepLabels"
@@ -18,7 +18,7 @@
         <!-- 第 1 步：我是谁 -->
         <view v-if="step === 1" class="wmc-card">
           <view class="wmc-section-title">
-            <text>我是谁</text>
+            <text>基础信息</text>
             <text class="wmc-tag wmc-tag--muted">仅用于计算</text>
           </view>
           <view class="wmc-field">
@@ -70,7 +70,7 @@
         <!-- 第 2 步：我希望找谁 -->
         <view v-if="step === 2" class="wmc-card">
           <view class="wmc-section-title">
-            <text>我希望找谁</text>
+            <text>期望条件</text>
             <text class="wmc-tag wmc-tag--muted">先填写期望值</text>
           </view>
           <view class="wmc-field">
@@ -582,20 +582,23 @@ function goLogin() {
 }
 .level-group {
   display: flex;
-  border: 1rpx solid $uni-border-color;
-  border-radius: 10rpx;
-  overflow: hidden;
+  padding: 5rpx;
+  border-radius: 999rpx;
+  background: #eef2f7;
   flex-shrink: 0;
 }
 .level-group__item {
   padding: 10rpx 20rpx;
-  font-size: 24rpx;
-  color: $uni-text-color-grey;
-  background: #ffffff;
+  font-size: 22rpx;
+  font-weight: 500;
+  color: #64748b;
+  border-radius: 999rpx;
+  transition: all 0.12s ease;
 }
 .level-group__item--active {
-  background: $uni-color-primary;
+  background: linear-gradient(135deg, #3355ff, #5a7bff);
   color: #ffffff;
+  box-shadow: 0 6rpx 14rpx rgba(51, 85, 255, 0.28);
 }
 .review-row {
   display: flex;

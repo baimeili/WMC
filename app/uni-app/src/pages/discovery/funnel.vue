@@ -43,8 +43,8 @@
           :steps="funnel.steps"
           market="real"
           title="真实候选池顺序漏斗"
-          final-label="单向符合硬条件人数"
-          :final-text="finalText"
+          final-label="双向基础候选人"
+          :final-text="reciprocalText"
           :note="funnel.note || '按当前条件顺序计算，改变条件顺序会改变每一步的损失展示'"
         />
 

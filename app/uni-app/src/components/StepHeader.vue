@@ -1,19 +1,21 @@
 <template>
   <view class="step-header">
     <view class="step-header__top">
-      <view v-if="showBack" class="step-header__back" @tap="handleBack">返回</view>
+      <view v-if="showBack" class="step-header__back" @tap="handleBack">‹</view>
       <view class="step-header__title-wrap">
         <text class="step-header__title">{{ title }}</text>
         <text v-if="subtitle" class="step-header__subtitle">{{ subtitle }}</text>
       </view>
       <text v-if="badge" class="step-header__badge">{{ badge }}</text>
     </view>
+
     <view v-if="percent !== null" class="step-header__progress">
       <view class="step-header__track">
         <view class="step-header__bar" :style="{ width: safePercent + '%' }"></view>
       </view>
-      <text class="step-header__percent">完成度 {{ safePercent }}%</text>
+      <text class="step-header__percent wmc-num">完成度 {{ safePercent }}%</text>
     </view>
+
     <view v-else-if="steps.length > 0" class="step-header__steps">
       <view
         v-for="item in stepItems"
@@ -78,106 +80,117 @@ function handleBack() {
 
 <style lang="scss" scoped>
 .step-header {
-  background: #ffffff;
-  border-radius: 16rpx;
-  padding: 24rpx 28rpx;
   margin-bottom: 24rpx;
-  box-shadow: $wmc-shadow;
 }
 .step-header__top {
   display: flex;
   align-items: center;
-  gap: 20rpx;
 }
 .step-header__back {
-  font-size: 26rpx;
-  color: $uni-color-primary;
-  padding: 8rpx 12rpx;
-  border-radius: 8rpx;
-  background: rgba(47, 107, 255, 0.08);
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #334155;
+  font-size: 40rpx;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 18rpx;
+  box-shadow: 0 6rpx 18rpx rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
 }
 .step-header__title-wrap {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 .step-header__title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: $uni-text-color;
+  font-size: 38rpx;
+  font-weight: 700;
+  color: #0b1220;
+  letter-spacing: -0.5rpx;
 }
 .step-header__subtitle {
-  font-size: 24rpx;
-  color: $uni-text-color-grey;
   margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #64748b;
   line-height: 1.6;
 }
 .step-header__badge {
-  font-size: 24rpx;
-  color: $uni-text-color-grey;
-  background: #f1f5f9;
-  border-radius: 8rpx;
-  padding: 6rpx 16rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #3355ff;
+  background: rgba(51, 85, 255, 0.08);
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  flex-shrink: 0;
 }
 .step-header__progress {
-  margin-top: 20rpx;
+  margin-top: 22rpx;
+  display: flex;
+  align-items: center;
 }
 .step-header__track {
+  flex: 1;
   height: 12rpx;
   border-radius: 999rpx;
-  background: #eef2f7;
+  background: #e7ecf5;
   overflow: hidden;
 }
 .step-header__bar {
   height: 100%;
   border-radius: 999rpx;
-  background: $uni-color-primary;
-  transition: width 0.2s ease;
+  background: linear-gradient(90deg, #3355ff, #7c9bff);
+  transition: width 0.3s ease;
 }
 .step-header__percent {
-  display: block;
-  text-align: right;
-  font-size: 24rpx;
-  color: $uni-text-color-grey;
-  margin-top: 10rpx;
+  margin-left: 18rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #3355ff;
+  flex-shrink: 0;
 }
 .step-header__steps {
   display: flex;
-  margin-top: 20rpx;
-  gap: 12rpx;
+  align-items: flex-start;
+  margin-top: 26rpx;
 }
 .step-header__step {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8rpx;
+  opacity: 0.45;
+}
+.step-header__step--active {
+  opacity: 1;
 }
 .step-header__dot {
   width: 44rpx;
   height: 44rpx;
   border-radius: 50%;
-  background: #eef2f7;
+  background: #e2e8f0;
+  color: #64748b;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .step-header__step--active .step-header__dot {
-  background: $uni-color-primary;
+  background: linear-gradient(135deg, #3355ff, #5a7bff);
+  color: #ffffff;
+  box-shadow: 0 6rpx 14rpx rgba(51, 85, 255, 0.28);
 }
 .step-header__dot-text {
-  font-size: 24rpx;
-  color: $uni-text-color-grey;
-}
-.step-header__step--active .step-header__dot-text {
-  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: 700;
 }
 .step-header__dot-label {
-  font-size: 22rpx;
-  color: $uni-text-color-grey;
+  margin-top: 8rpx;
+  font-size: 20rpx;
+  color: #64748b;
   text-align: center;
-}
-.step-header__step--active .step-header__dot-label {
-  color: $uni-color-primary;
 }
 </style>

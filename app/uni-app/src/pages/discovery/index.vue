@@ -11,16 +11,16 @@
       </view>
 
       <template v-else>
-        <view class="wmc-card">
+        <view class="wmc-card summary-card">
           <MarketBadge market="real" />
           <view class="summary-stats">
             <view class="wmc-stat">
               <text class="wmc-stat-value">{{ reciprocalText }}</text>
-              <text class="wmc-stat-label">双向基础候选人</text>
+              <text class="wmc-stat-label">双向候选人</text>
             </view>
             <view class="wmc-stat">
               <text class="wmc-stat-value">{{ oneWayText }}</text>
-              <text class="wmc-stat-label">单向符合硬条件</text>
+              <text class="wmc-stat-label">单向符合</text>
             </view>
             <view class="wmc-stat">
               <text class="wmc-stat-value">{{ completionText }}</text>
@@ -68,17 +68,20 @@
         </view>
 
         <view class="entry-grid">
-          <view class="entry-item" @tap="goFunnel">
-            <text class="entry-item__title">真实候选池漏斗</text>
-            <text class="entry-item__desc">查看逐层筛选结果</text>
+          <view class="entry-item entry-item--blue" @tap="goFunnel">
+            <view class="entry-item__icon">漏</view>
+            <text class="entry-item__title">真实漏斗</text>
+            <text class="entry-item__desc">逐层筛选结果</text>
           </view>
-          <view class="entry-item" @tap="goSensitivity">
+          <view class="entry-item entry-item--amber" @tap="goSensitivity">
+            <view class="entry-item__icon">敏</view>
             <text class="entry-item__title">条件敏感性</text>
-            <text class="entry-item__desc">哪条条件影响最大</text>
+            <text class="entry-item__desc">哪条影响最大</text>
           </view>
-          <view class="entry-item" @tap="goMatches">
+          <view class="entry-item entry-item--teal" @tap="goMatches">
+            <view class="entry-item__icon">合</view>
             <text class="entry-item__title">我的 Match</text>
-            <text class="entry-item__desc">互相感兴趣的人</text>
+            <text class="entry-item__desc">互相感兴趣</text>
           </view>
         </view>
 
@@ -99,7 +102,7 @@
             v-for="candidate in candidates"
             :key="candidate.user_id"
             :candidate="candidate"
-            @tap="openCandidate"
+            @select="openCandidate"
           />
           <EmptyState
             v-if="candidates.length === 0"
@@ -276,10 +279,17 @@ function openCandidate(candidate: CandidateCardItem) {
 .wmc-container--inner {
   padding-top: 24rpx;
 }
+.summary-card {
+  background: linear-gradient(165deg, #ffffff 0%, #f3fbfa 100%);
+  border-color: rgba(14, 165, 165, 0.16);
+}
 .summary-stats {
   display: flex;
-  gap: 20rpx;
+  gap: 16rpx;
   margin-top: 24rpx;
+}
+.summary-stats .wmc-stat {
+  background: rgba(14, 165, 165, 0.06);
 }
 .summary-note {
   margin-top: 20rpx;
@@ -325,26 +335,51 @@ function openCandidate(candidate: CandidateCardItem) {
 }
 .entry-grid {
   display: flex;
-  gap: 16rpx;
-  margin-bottom: 24rpx;
+  gap: 18rpx;
+  margin-bottom: 28rpx;
 }
 .entry-item {
   flex: 1;
   background: #ffffff;
-  border-radius: 12rpx;
-  padding: 20rpx 16rpx;
-  box-shadow: $wmc-shadow;
+  border-radius: 24rpx;
+  padding: 24rpx 20rpx;
+  box-shadow: 0 10rpx 30rpx rgba(15, 23, 42, 0.06);
+  border: 1rpx solid rgba(15, 23, 42, 0.04);
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+}
+.entry-item__icon {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 700;
+  margin-bottom: 16rpx;
+}
+.entry-item--blue .entry-item__icon {
+  color: #3355ff;
+  background: rgba(51, 85, 255, 0.1);
+}
+.entry-item--amber .entry-item__icon {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+}
+.entry-item--teal .entry-item__icon {
+  color: #0b7f7f;
+  background: rgba(14, 165, 165, 0.12);
 }
 .entry-item__title {
   font-size: 26rpx;
-  font-weight: 600;
-  color: $uni-text-color;
+  font-weight: 700;
+  color: #0b1220;
 }
 .entry-item__desc {
-  font-size: 22rpx;
-  color: $uni-text-color-grey;
+  font-size: 20rpx;
+  color: #94a3b8;
   margin-top: 6rpx;
   line-height: 1.5;
 }

@@ -72,26 +72,26 @@
           </view>
           <text class="wmc-hint">解释仅包含硬条件满足情况与分类维度得分，不代表婚姻成功概率。</text>
           <view v-if="showWhy" class="why-body">
-            <view v-if="candidate.reasons.length > 0" class="why-block">
+            <view v-if="safeReasons.length > 0" class="why-block">
               <text class="why-block__title">硬条件满足项</text>
-              <view v-for="(reason, index) in candidate.reasons" :key="index" class="why-item">
+              <view v-for="(reason, index) in safeReasons" :key="index" class="why-item">
                 <text class="why-item__dot">·</text>
                 <text class="why-item__text">{{ reason }}</text>
               </view>
             </view>
-            <view v-if="candidate.conflicts.length > 0" class="why-block">
+            <view v-if="safeConflicts.length > 0" class="why-block">
               <text class="why-block__title">硬条件冲突项</text>
-              <text class="why-item__text">你与该用户的硬条件存在 {{ candidate.conflicts.length }} 项冲突</text>
-              <view v-for="(conflict, index) in candidate.conflicts" :key="index" class="why-item">
+              <text class="why-item__text">你与该用户的硬条件存在 {{ safeConflicts.length }} 项冲突</text>
+              <view v-for="(conflict, index) in safeConflicts" :key="index" class="why-item">
                 <text class="why-item__dot">·</text>
                 <text class="why-item__text">{{ conflict }}</text>
               </view>
             </view>
-            <view v-if="candidate.dimensions.length > 0" class="why-block">
+            <view v-if="safeDimensions.length > 0" class="why-block">
               <text class="why-block__title">各分类维度得分</text>
-              <ScoreBar v-for="dimension in candidate.dimensions" :key="dimension.name" :label="dimension.name" :score="dimension.score" />
+              <ScoreBar v-for="dimension in safeDimensions" :key="dimension.key || dimension.name" :label="dimension.label || dimension.name" :score="dimension.score" />
             </view>
-            <view v-if="candidate.reasons.length === 0 && candidate.dimensions.length === 0" class="why-block">
+            <view v-if="safeReasons.length === 0 && safeDimensions.length === 0" class="why-block">
               <text class="wmc-hint">暂无更细的解释数据。</text>
             </view>
             <text class="why-disclaimer">{{ defaultDisclaimer }}</text>
@@ -140,6 +140,11 @@ import type { CandidateDetail } from '@/api/types'
 
 const auth = useAuthStore()
 const candidate = ref<CandidateDetail | null>(null)
+
+// 后端可能省略空数组字段，这里统一兜底，避免模板取 .length 报错
+const safeReasons = computed(() => (candidate.value && candidate.value.reasons ? candidate.value.reasons : []))
+const safeConflicts = computed(() => (candidate.value && candidate.value.conflicts ? candidate.value.conflicts : []))
+const safeDimensions = computed(() => (candidate.value && candidate.value.dimensions ? candidate.value.dimensions : []))
 const loading = ref(true)
 const loadError = ref('')
 const showWhy = ref(true)
